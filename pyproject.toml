@@ -1,0 +1,26 @@
+[project]
+name = "asx-shorts"
+version = "0.1.0"
+description = "ASIC daily short positions for ASX stocks as a REST API and MCP server"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.146.0",
+    "mcp[cli]>=2.3.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+asx-shorts-ingest = "asx_shorts.ingest:main"
+asx-shorts-keys = "asx_shorts.keys:main"
+asx-shorts-mcp = "asx_shorts.mcp_server:main_stdio"
+asx-shorts-serve = "asx_shorts.api:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+]

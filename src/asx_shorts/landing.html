@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASX Short Positions API</title>
+<meta name="description" content="Daily ASIC short positions for every ASX security since 2010, as a REST API and an MCP server for AI assistants.">
+<style>
+  :root { --ink:#14181f; --muted:#5b6472; --line:#e3e6eb; --bg:#fbfbfc; --card:#fff; --accent:#0b6e4f; --code:#f3f5f7; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a3039; --bg:#12151a; --card:#181c22; --accent:#4cc79a; --code:#1f242c; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:860px; margin:0 auto; padding:48px 16px 64px; }
+  h1 { font-size:34px; line-height:1.15; margin:0 0 12px; letter-spacing:-.01em; }
+  h2 { font-size:20px; margin:40px 0 12px; }
+  p.lead { color:var(--muted); font-size:18px; margin:0 0 24px; max-width:60ch; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h3 { margin:0 0 6px; font-size:16px; }
+  .card p, .card li { color:var(--muted); font-size:14px; margin:0; }
+  .card ul { margin:8px 0 0; padding-left:18px; }
+  pre { background:var(--code); border:1px solid var(--line); border-radius:10px; padding:14px; overflow-x:auto; font-size:13px; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  a { color:var(--accent); }
+  footer { margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ASX short positions, as an API.</h1>
+  <p class="lead">Every daily short-position report ASIC has published since June 2010, cleaned into one consistent dataset — queryable over REST or straight from Claude, Cursor and other AI assistants via MCP.</p>
+
+  <div class="grid">
+    <div class="card"><h3>16 years, one format</h3><p>ASIC changed its file format in 2022 and its percentage scaling more than once. Short % here is recomputed from share counts, every day, for every security.</p></div>
+    <div class="card"><h3>Built for AI tools</h3><p>An MCP endpoint lets an assistant answer "what's the most shorted lithium stock and how has that changed this month?" directly.</p></div>
+    <div class="card"><h3>Honest dates</h3><p>Each row is labelled with its position date. ASIC publishes about four trading days later; we never pretend it's today's data.</p></div>
+  </div>
+
+  <h2>Plans</h2>
+  <table>
+    <tr><th>Plan</th><th>History</th><th>Requests / day</th><th>MCP</th></tr>
+    <tr><td>Free</td><td>Last 90 days</td><td>250</td><td>Yes</td></tr>
+    <tr><td>Pro</td><td>Full history from June 2010</td><td>20,000</td><td>Yes</td></tr>
+  </table>
+
+  <h2>Endpoints</h2>
+  <pre><code>GET /v1/coverage                                  public — what's loaded
+GET /v1/products?q=lithium                        search by code or name
+GET /v1/short-positions/{code}?from=&amp;to=&amp;format=csv  daily history for one code
+GET /v1/most-shorted?date=&amp;limit=20                most shorted on a date
+GET /v1/changes?reports_back=5&amp;direction=up        biggest moves in short %
+/docs                                              interactive reference</code></pre>
+
+  <pre><code>curl -H "X-API-Key: asxs_…" https://&lt;host&gt;/v1/most-shorted?limit=10</code></pre>
+
+  <h2>Use it from an AI assistant (MCP)</h2>
+  <pre><code>{
+  "mcpServers": {
+    "asx-shorts": {
+      "type": "http",
+      "url": "https://&lt;host&gt;/mcp/",
+      "headers": { "Authorization": "Bearer asxs_…" }
+    }
+  }
+}</code></pre>
+  <p>Tools: <code>search_products</code>, <code>short_history</code>, <code>most_shorted</code>, <code>short_changes</code>, <code>data_coverage</code>.</p>
+
+  <footer>
+    <p>Data: © Australian Securities &amp; Investments Commission: Reproduced with permission. Short selling position reporting data is licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. This service is independent and is not affiliated with, endorsed or sponsored by ASIC.</p>
+    <p>Reported short positions are aggregated disclosures and may differ from actual short interest. Not financial advice.</p>
+  </footer>
+</main>
+</body>
+</html>
