@@ -180,3 +180,22 @@ def test_mcp_insider_tool(client):
     res = r.json()["result"]
     out = res.get("structuredContent") or json.loads(res["content"][0]["text"])
     assert out["data"][0]["total_value_usd"] == ONE_PURCHASE
+
+
+def test_catch_up_stops_on_a_block_and_keeps_progress(tmp_path, monkeypatch):
+    c = db.connect(tmp_path / "c.sqlite")
+    c.execute("INSERT INTO insider_loads (kind, period, filings) VALUES ('quarter', '2026q3', 0)")
+    monkeypatch.setattr(si, "http_get", lambda url, **kw: b"")
+    monkeypatch.setattr(si, "quarter_links", lambda html: {"2026q3": "x"})
+    loaded = []
+
+    def fake_day(conn, d, log=print):
+        if d == date(2026, 10, 7):
+            raise RuntimeError("HTTP Error 403: Forbidden")
+        loaded.append(d)
+        return 1
+
+    monkeypatch.setattr(si, "load_day", fake_day)
+    stats = si.catch_up(c, today=date(2026, 10, 9), log=lambda *_: None)
+    assert loaded == [date(2026, 10, 1), date(2026, 10, 2), date(2026, 10, 5), date(2026, 10, 6)]
+    assert stats["stopped_at"] == "2026-10-07" and stats["days"] == 4

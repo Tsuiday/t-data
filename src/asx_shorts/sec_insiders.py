@@ -95,7 +95,9 @@ CREATE TABLE IF NOT EXISTS insider_trades (
     underlying     REAL,
     PRIMARY KEY (accession, derivative, seq)
 ) WITHOUT ROWID;
-CREATE INDEX IF NOT EXISTS insider_trades_code_date ON insider_trades (code, trade_date);
+-- Queries narrow by issuer or filing date first; a (code, trade_date) index made
+-- SQLite scan every purchase since 2006 instead, so it is dropped where it exists.
+DROP INDEX IF EXISTS insider_trades_code_date;
 
 CREATE TABLE IF NOT EXISTS insider_loads (
     period    TEXT PRIMARY KEY,        -- '2026q2' or a daily date '2026-10-16'
@@ -405,7 +407,7 @@ def load_day(conn: sqlite3.Connection, d: date, log=print) -> int:
     return n
 
 
-def catch_up(conn: sqlite3.Connection, today: date | None = None, log=print) -> dict[str, int]:
+def catch_up(conn: sqlite3.Connection, today: date | None = None, log=print) -> dict[str, int | str]:
     """Load any quarterly files not yet loaded, then daily filings since the last quarter."""
     ensure_schema(conn)
     today = today or date.today()
@@ -425,7 +427,12 @@ def catch_up(conn: sqlite3.Connection, today: date | None = None, log=print) -> 
         while d <= today:
             recent = (today - d).days <= 3              # re-check the last few days for late index updates
             if d.weekday() < 5 and (recent or d.isoformat() not in done_days):
-                stats["daily_filings"] += load_day(conn, d, log)
+                try:
+                    stats["daily_filings"] += load_day(conn, d, log)
+                except RuntimeError as exc:             # e.g. a temporary SEC block; days done so far are kept
+                    log(f"{d}: stopping, will resume next run: {exc}")
+                    stats["stopped_at"] = d.isoformat()
+                    break
                 stats["days"] += 1
             d += timedelta(days=1)
     return stats
