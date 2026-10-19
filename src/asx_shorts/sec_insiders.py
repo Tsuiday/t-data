@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import os
 import re
 import sqlite3
@@ -37,6 +38,7 @@ from urllib import error, request
 INDEX_PAGE = "https://www.sec.gov/data-research/sec-markets-data/insider-transactions-data-sets"
 SEC_BASE = "https://www.sec.gov"
 DAILY_INDEX = SEC_BASE + "/Archives/edgar/daily-index/{y}/QTR{q}/form.{d:%Y%m%d}.idx"
+DAILY_LISTING = SEC_BASE + "/Archives/edgar/daily-index/{y}/QTR{q}/index.json"
 FORMS = {"3", "3/A", "4", "4/A", "5", "5/A"}
 ATTRIBUTION = "Source: U.S. Securities and Exchange Commission, EDGAR (Forms 3, 4, 5)."
 
@@ -383,6 +385,14 @@ def load_quarter(conn: sqlite3.Connection, quarter: str, url: str, log=print) ->
     return n
 
 
+def published_days(listing: bytes) -> set[date]:
+    """Days with a form index in a quarter's index.json. The SEC answers 403, not 404,
+    for files that don't exist (e.g. US federal holidays), so ask instead of guessing."""
+    items = json.loads(listing)["directory"]["item"]
+    return {datetime.strptime(m[1], "%Y%m%d").date()
+            for i in items if (m := re.fullmatch(r"form\.(\d{8})\.idx", i["name"]))}
+
+
 def load_day(conn: sqlite3.Connection, d: date, log=print) -> int:
     q = (d.month - 1) // 3 + 1
     try:
@@ -424,9 +434,16 @@ def catch_up(conn: sqlite3.Connection, today: date | None = None, log=print) -> 
         start = date(y + (n == 4), (n % 4) * 3 + 1, 1)     # first day after the last bulk quarter
         done_days = {r[0] for r in conn.execute("SELECT period FROM insider_loads WHERE kind = 'day'")}
         d = max(start, today - timedelta(days=120))
+        listings: dict[tuple[int, int], set[date]] = {}
         while d <= today:
+            key = (d.year, (d.month - 1) // 3 + 1)
+            if key not in listings:
+                try:
+                    listings[key] = published_days(http_get(DAILY_LISTING.format(y=key[0], q=key[1])))
+                except FileNotFoundError:
+                    listings[key] = set()               # quarter not started yet
             recent = (today - d).days <= 3              # re-check the last few days for late index updates
-            if d.weekday() < 5 and (recent or d.isoformat() not in done_days):
+            if d in listings[key] and (recent or d.isoformat() not in done_days):
                 try:
                     stats["daily_filings"] += load_day(conn, d, log)
                 except RuntimeError as exc:             # e.g. a temporary SEC block; days done so far are kept

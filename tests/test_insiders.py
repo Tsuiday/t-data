@@ -185,7 +185,8 @@ def test_mcp_insider_tool(client):
 def test_catch_up_stops_on_a_block_and_keeps_progress(tmp_path, monkeypatch):
     c = db.connect(tmp_path / "c.sqlite")
     c.execute("INSERT INTO insider_loads (kind, period, filings) VALUES ('quarter', '2026q3', 0)")
-    monkeypatch.setattr(si, "http_get", lambda url, **kw: b"")
+    listing = json.dumps({"directory": {"item": [{"name": f"form.202610{d:02d}.idx"} for d in (1, 2, 5, 6, 7, 8, 9)]}})
+    monkeypatch.setattr(si, "http_get", lambda url, **kw: listing.encode() if url.endswith("index.json") else b"")
     monkeypatch.setattr(si, "quarter_links", lambda html: {"2026q3": "x"})
     loaded = []
 
@@ -199,3 +200,17 @@ def test_catch_up_stops_on_a_block_and_keeps_progress(tmp_path, monkeypatch):
     stats = si.catch_up(c, today=date(2026, 10, 9), log=lambda *_: None)
     assert loaded == [date(2026, 10, 1), date(2026, 10, 2), date(2026, 10, 5), date(2026, 10, 6)]
     assert stats["stopped_at"] == "2026-10-07" and stats["days"] == 4
+
+
+def test_catch_up_skips_days_the_sec_did_not_publish(tmp_path, monkeypatch):
+    c = db.connect(tmp_path / "h.sqlite")
+    c.execute("INSERT INTO insider_loads (kind, period, filings) VALUES ('quarter', '2026q3', 0)")
+    # 12 Oct 2026 (Columbus Day) has no index; asking for it would get a 403.
+    listing = {"directory": {"item": [{"name": "form.20261009.idx"}, {"name": "form.20261013.idx"},
+                                      {"name": "company.20261013.idx"}, {"name": "sitemap.quarterlyindex1.xml"}]}}
+    monkeypatch.setattr(si, "http_get", lambda url, **kw: json.dumps(listing).encode() if url.endswith("index.json") else b"")
+    monkeypatch.setattr(si, "quarter_links", lambda html: {"2026q3": "x"})
+    loaded = []
+    monkeypatch.setattr(si, "load_day", lambda conn, d, log=print: loaded.append(d) or 1)
+    stats = si.catch_up(c, today=date(2026, 10, 13), log=lambda *_: None)
+    assert loaded == [date(2026, 10, 9), date(2026, 10, 13)] and "stopped_at" not in stats
