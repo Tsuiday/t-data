@@ -18,6 +18,9 @@ Built as a cheap demand test: if people pay for this, add director trades
   Don't use ASIC's logo, and don't imply ASIC endorses the service.
 - **Dates:** each file is named by its **position date**. ASIC publishes it
   about four trading days later (on Mon 19 Oct 2026 the newest file was Tue 13 Oct).
+- **Gaps:** ASIC has no report for three ordinary trading days (4 Sep 2013,
+  9 Sep 2014, 1 Dec 2014). It answers some missing dates with an empty file
+  instead of a 404; both cases are recorded as "no report".
 - **Cleaning:**
   - Before mid-2022 the files are UTF-16 and tab-separated; after that they're
     UTF-8 and comma-separated.

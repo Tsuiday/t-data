@@ -52,7 +52,7 @@ def done_dates(conn: sqlite3.Connection) -> set[str]:
 
 def run(conn: sqlite3.Connection, since: date, until: date, *, pause: float = 0.2, log=print) -> dict[str, int]:
     have = done_dates(conn)
-    stats = {"loaded": 0, "holiday": 0, "pending": 0, "skipped": 0}
+    stats = {"loaded": 0, "holiday": 0, "pending": 0, "skipped": 0, "unreadable": 0}
     d = since
     while d <= until:
         if d.weekday() >= 5 or d.isoformat() in have:
@@ -64,6 +64,10 @@ def run(conn: sqlite3.Connection, since: date, until: date, *, pause: float = 0.
             n = store(conn, d, raw, url)
             stats["loaded"] += 1
             log(f"{d} {n} products")
+        except ValueError as exc:
+            # One malformed file must not stop the run; it's retried next time.
+            stats["unreadable"] += 1
+            log(f"{d} unreadable: {exc}")
         except asic.ReportNotPublished:
             if (until - d).days > 10:
                 with conn:

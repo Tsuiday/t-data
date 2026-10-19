@@ -43,3 +43,26 @@ def test_rows_that_do_not_reconcile_are_dropped():
 def test_rejects_files_that_are_not_reports():
     with pytest.raises(ValueError):
         asic.parse(b"<html>Not found</html>")
+
+
+def test_empty_200_response_counts_as_not_published(monkeypatch):
+    class Resp:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return b""
+    monkeypatch.setattr(asic.request, "urlopen", lambda *a, **k: Resp())
+    from datetime import date
+    with pytest.raises(asic.ReportNotPublished):
+        asic.fetch(date(2013, 9, 4))
+
+
+def test_unreadable_file_does_not_stop_the_run(tmp_path, monkeypatch):
+    from datetime import date
+    from asx_shorts import db, ingest
+    good = (FIX / "RR20250701-001-SSDailyAggShortPos.csv").read_bytes()
+    def fake_fetch(d, **k):
+        return (b"<html>oops</html>" if d.day == 1 else good), "u"
+    monkeypatch.setattr(asic, "fetch", fake_fetch)
+    conn = db.connect(tmp_path / "t.sqlite")
+    stats = ingest.run(conn, date(2025, 7, 1), date(2025, 7, 2), pause=0, log=lambda *_: None)
+    assert stats["unreadable"] == 1 and stats["loaded"] == 1

@@ -73,7 +73,11 @@ def fetch(d: date, *, retries: int = 3, timeout: float = 30.0) -> tuple[bytes, s
         try:
             req = request.Request(url, headers={"User-Agent": USER_AGENT})
             with request.urlopen(req, timeout=timeout) as resp:
-                return resp.read(), url
+                raw = resp.read()
+            if not raw.strip():
+                # ASIC answers some missing dates with an empty 200 instead of a 404.
+                raise ReportNotPublished(d.isoformat())
+            return raw, url
         except error.HTTPError as exc:
             if exc.code == 404:
                 raise ReportNotPublished(d.isoformat()) from exc
