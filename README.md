@@ -4,6 +4,8 @@ Every daily short-position report ASIC has published since June 2010, cleaned
 into one dataset and served as a REST API plus an MCP server, so AI assistants
 can query it directly.
 
+**Live:** https://tradingdata-ai.fly.dev (Fly.io app `tradingdata-ai`, Sydney).
+
 Built as a cheap demand test: if people pay for this, add director trades
 (Appendix 3Y) and substantial-holder notices next.
 
@@ -63,7 +65,7 @@ keys by hand until demand is proven.
 
 ## MCP
 
-**Remote:** `https://<host>/mcp/` with header `Authorization: Bearer asxs_…`.
+**Remote:** `https://tradingdata-ai.fly.dev/mcp/` with header `Authorization: Bearer asxs_…`.
 Tools: `search_products`, `short_history`, `most_shorted`, `short_changes`,
 `data_coverage`. Each caller's plan limits apply, exactly as in the REST API.
 
@@ -76,8 +78,23 @@ claude mcp add asx-shorts -- uv --directory /path/to/asx-shorts run asx-shorts-m
 
 ## Deploy
 
-SQLite needs a persistent disk, so use a small VM or a platform with volumes
-(Fly.io, Railway, Render), not serverless.
+Production runs on Fly.io as app `tradingdata-ai` in Sydney (`fly.toml`): one
+always-on shared-cpu-1x/512 MB machine with a 3 GB encrypted volume at `/data`.
+The daily update runs inside the app, because a Fly volume attaches to only one
+machine.
+
+```sh
+fly deploy -a tradingdata-ai          # build on Fly and roll out
+fly logs -a tradingdata-ai            # includes the daily ingest log
+fly ssh console -a tradingdata-ai -C "setpriv --reuid=app --regid=app --init-groups \
+  /app/.venv/bin/asx-shorts-keys issue someone@example.com --tier pro"
+```
+
+Issue keys as the `app` user, as above. Run as root, SQLite can leave
+root-owned journal files that the app can't write.
+
+SQLite needs a persistent disk, so if you move hosts, use a small VM or a
+platform with volumes (Fly.io, Railway, Render), not serverless.
 
 - `Dockerfile` serves the API on port 8000 and reads the database from
   `/data/asx_shorts.sqlite` (mount a volume there).

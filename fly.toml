@@ -3,7 +3,7 @@
 # data plus maintenance headroom; see README). The daily ASIC update runs
 # inside the app, because a volume can attach to only one machine.
 
-app = "asx-shorts"
+app = "tradingdata-ai"
 primary_region = "syd"
 
 [build]
@@ -11,7 +11,7 @@ primary_region = "syd"
 
 [env]
   ASX_SHORTS_DB = "/data/asx_shorts.sqlite"
-  ASX_SHORTS_HOSTS = "asx-shorts.fly.dev"
+  ASX_SHORTS_HOSTS = "tradingdata-ai.fly.dev"
   ASX_SHORTS_INGEST_HOUR = "20"
 
 [[mounts]]
