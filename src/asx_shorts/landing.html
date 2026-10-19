@@ -54,14 +54,14 @@ GET /v1/most-shorted?date=&amp;limit=20                most shorted on a date
 GET /v1/changes?reports_back=5&amp;direction=up        biggest moves in short %
 /docs                                              interactive reference</code></pre>
 
-  <pre><code>curl -H "X-API-Key: asxs_…" https://&lt;host&gt;/v1/most-shorted?limit=10</code></pre>
+  <pre><code>curl -H "X-API-Key: asxs_…" https://asx-shorts.fly.dev/v1/most-shorted?limit=10</code></pre>
 
   <h2>Use it from an AI assistant (MCP)</h2>
   <pre><code>{
   "mcpServers": {
     "asx-shorts": {
       "type": "http",
-      "url": "https://&lt;host&gt;/mcp/",
+      "url": "https://asx-shorts.fly.dev/mcp/",
       "headers": { "Authorization": "Bearer asxs_…" }
     }
   }
