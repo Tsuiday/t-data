@@ -6,10 +6,45 @@ server:
 - **ASX short positions:** every daily ASIC report since June 2010.
 - **US insider trades:** every SEC Form 3, 4 and 5 since January 2006, updated daily.
 
-**Live:** https://tradingdata-ai.fly.dev (Fly.io app `tradingdata-ai`, Sydney).
+**Live:** https://tradingdata-ai.fly.dev (hosted in Sydney).
 
-Built as a cheap demand test: if people pay for this, add director trades
-(Appendix 3Y) and substantial-holder notices next.
+## Quick start
+
+1. Get a free key at https://tradingdata-ai.fly.dev (no email needed).
+2. Add the remote MCP server to Claude, Cursor or any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "tradingdata-ai": {
+      "type": "http",
+      "url": "https://tradingdata-ai.fly.dev/mcp/",
+      "headers": { "Authorization": "Bearer asxs_…" }
+    }
+  }
+}
+```
+
+Claude Code: `claude mcp add --transport http tradingdata-ai https://tradingdata-ai.fly.dev/mcp/ --header "Authorization: Bearer asxs_…"`
+
+3. Ask things like *"Which ASX lithium stocks had the biggest rise in short
+   interest this month?"* or *"Show US companies where several insiders bought
+   shares on market in the last 30 days."*
+
+| MCP tool | What it does |
+|---|---|
+| `search_products` | Find ASX codes by code or company name |
+| `short_history` | Daily short position history for one ASX code |
+| `most_shorted` | Most heavily shorted ASX securities on a date |
+| `short_changes` | Biggest rises or falls in short % over N reports |
+| `data_coverage` | Date range and counts loaded |
+| `us_insider_trades` | SEC Form 3/4/5 transactions for one US ticker |
+| `us_insider_buying` | US companies ranked by open-market insider purchases (cluster buying with `min_insiders`) |
+| `us_insider_summary` | Insider buying vs selling (US$) for one ticker |
+
+Free plan: last 90 days, 250 requests a day. Pro (full history, 20,000
+requests a day) is free during the beta. Request it on the website.
+Data only, not financial advice. See the [terms](https://tradingdata-ai.fly.dev/terms).
 
 ## Data and licence
 
