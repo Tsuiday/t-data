@@ -23,7 +23,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from mcp.server.transport_security import TransportSecuritySettings
 
-from . import asic, queries
+from . import asic, insider_queries, queries, sec_insiders
 from .db import connect
 from .keys import Plan, count_request, lookup
 from .mcp_server import current_plan, mcp
@@ -71,8 +71,11 @@ def _date(value: str | None, name: str) -> str | None:
         raise HTTPException(400, {"error": "bad_date", "message": f"{name} must be YYYY-MM-DD"})
 
 
-def _wrap(request: Request, plan: Plan, payload: dict[str, Any]) -> JSONResponse:
-    body = {**payload, "plan": plan.name, "attribution": asic.ATTRIBUTION, "licence": asic.LICENCE}
+def _wrap(request: Request, plan: Plan, payload: dict[str, Any], source: str = "asic") -> JSONResponse:
+    if source == "sec":
+        body = {**payload, "plan": plan.name, "attribution": sec_insiders.ATTRIBUTION}
+    else:
+        body = {**payload, "plan": plan.name, "attribution": asic.ATTRIBUTION, "licence": asic.LICENCE}
     resp = JSONResponse(body)
     limit, remaining = getattr(request.state, "rate", (0, 0))
     resp.headers["X-RateLimit-Limit"] = str(limit)
@@ -218,6 +221,45 @@ def changes(request: Request, plan: Annotated[Plan, Depends(require_key)],
             limit: Annotated[int, Query(ge=1, le=100)] = 20):
     """Biggest changes in short % (percentage points) vs N reports earlier."""
     return _wrap(request, plan, _run(queries.changes, reports_back, limit, direction, plan.floor()))
+
+
+TICKER_US = re.compile(r"^[A-Z0-9.\-]{1,10}$")
+
+
+@router.get("/v1/us/insiders/buying")
+def us_insider_buying(request: Request, plan: Annotated[Plan, Depends(require_key)],
+                      days: Annotated[int, Query(ge=1, le=3650)] = 30,
+                      min_value: Annotated[float, Query(ge=0)] = 100_000,
+                      role: Annotated[str, Query(pattern="^(any|officer_or_director|officer|director|ten_percent_owner)$")] = "officer_or_director",
+                      min_insiders: Annotated[int, Query(ge=1, le=50)] = 1,
+                      limit: Annotated[int, Query(ge=1, le=200)] = 50):
+    """US companies ranked by open-market insider purchases (Form 4, code P) filed in the last N days."""
+    return _wrap(request, plan, _run(insider_queries.buying, days, min_value, role, min_insiders, limit, plan.floor()), "sec")
+
+
+@router.get("/v1/us/insiders/{ticker}/summary")
+def us_insider_summary(request: Request, plan: Annotated[Plan, Depends(require_key)], ticker: str,
+                       days: Annotated[int, Query(ge=1, le=3650)] = 90):
+    """Open-market insider buying vs selling for one US ticker."""
+    ticker = ticker.upper()
+    if not TICKER_US.match(ticker):
+        raise HTTPException(400, {"error": "bad_ticker", "message": "tickers are 1-10 letters, digits, '.' or '-'"})
+    return _wrap(request, plan, _run(insider_queries.summary, ticker, days, plan.floor()), "sec")
+
+
+@router.get("/v1/us/insiders/{ticker}")
+def us_insider_trades(request: Request, plan: Annotated[Plan, Depends(require_key)], ticker: str,
+                      start: Annotated[str | None, Query(alias="from")] = None,
+                      end: Annotated[str | None, Query(alias="to")] = None,
+                      codes: Annotated[str | None, Query(pattern="^[A-Za-z](,[A-Za-z])*$")] = None,
+                      limit: Annotated[int, Query(ge=1, le=1000)] = 200):
+    """Insider transactions (Forms 3/4/5) for one US ticker, newest filings first. codes e.g. P,S."""
+    ticker = ticker.upper()
+    if not TICKER_US.match(ticker):
+        raise HTTPException(400, {"error": "bad_ticker", "message": "tickers are 1-10 letters, digits, '.' or '-'"})
+    code_list = codes.split(",") if codes else None
+    return _wrap(request, plan, _run(insider_queries.trades, ticker, _date(start, "from"), _date(end, "to"),
+                                     code_list, limit, plan.floor()), "sec")
 
 
 async def http_error(_request: Request, exc: HTTPException):

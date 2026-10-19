@@ -11,7 +11,7 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
-from . import asic, queries
+from . import asic, insider_queries, queries, sec_insiders
 from .db import connect
 from .keys import PLANS, Plan
 
@@ -19,10 +19,13 @@ from .keys import PLANS, Plan
 current_plan: contextvars.ContextVar[Plan] = contextvars.ContextVar("current_plan", default=PLANS["pro"])
 
 mcp = MCPServer(
-    name="asx-short-positions",
-    title="ASX Short Positions",
+    name="tradingdata-ai",
+    title="Trading data for AI (ASX short positions, US insider trades)",
     instructions=(
-        "Daily short positions for ASX-listed securities from ASIC, since June 2010. "
+        "Two datasets. (1) US insider transactions from SEC Forms 3/4/5 since 2006 "
+        "(tools prefixed us_insider_): code P = open-market purchase, S = sale; grants (A), "
+        "tax withholding (F) and option exercises (M) are not buying or selling decisions. "
+        "(2) Daily short positions for ASX-listed securities from ASIC, since June 2010. "
         "short_pct is a fraction of shares on issue (0.05 = 5%). Positions are as at the "
         "position date; ASIC publishes them about four trading days later, so the latest "
         "date is never 'today'. Data: " + asic.ATTRIBUTION
@@ -77,6 +80,44 @@ def short_changes(reports_back: int = 5, direction: str = "up", limit: int = 20)
 def data_coverage() -> dict[str, Any]:
     """First and last report dates, number of reports and securities loaded."""
     return _call(queries.coverage)
+
+
+def _wrap_sec(payload: dict[str, Any]) -> dict[str, Any]:
+    return {**payload, "attribution": sec_insiders.ATTRIBUTION, "plan": current_plan.get().name}
+
+
+def _call_sec(fn, *args) -> dict[str, Any]:
+    with closing(connect(readonly=True)) as conn:
+        try:
+            return _wrap_sec(fn(conn, *args))
+        except queries.NotFound as exc:
+            return _wrap_sec({"error": "not_found", "message": str(exc)})
+
+
+@mcp.tool()
+def us_insider_trades(ticker: str, start: str | None = None, end: str | None = None,
+                      codes: list[str] | None = None, limit: int = 100) -> dict[str, Any]:
+    """Insider transactions for one US ticker from SEC Forms 3/4/5, newest first.
+    Dates filter the filing date (YYYY-MM-DD). codes e.g. ["P"] for open-market purchases, ["P","S"]."""
+    return _call_sec(insider_queries.trades, ticker, start, end, codes, max(1, min(limit, 500)), current_plan.get().floor())
+
+
+@mcp.tool()
+def us_insider_buying(days: int = 30, min_value: float = 100_000, role: str = "officer_or_director",
+                      min_insiders: int = 1, limit: int = 25) -> dict[str, Any]:
+    """US companies ranked by open-market insider purchases filed in the last N days.
+    role: any | officer_or_director | officer | director | ten_percent_owner.
+    Use min_insiders >= 2 to find 'cluster buying' by several insiders."""
+    if role not in insider_queries.ROLE_FILTERS:
+        role = "officer_or_director"
+    return _call_sec(insider_queries.buying, max(1, min(days, 3650)), max(0.0, min_value), role,
+                     max(1, min(min_insiders, 50)), max(1, min(limit, 100)), current_plan.get().floor())
+
+
+@mcp.tool()
+def us_insider_summary(ticker: str, days: int = 90) -> dict[str, Any]:
+    """Open-market insider buying vs selling (US$) for one US ticker over the last N days."""
+    return _call_sec(insider_queries.summary, ticker, max(1, min(days, 3650)), current_plan.get().floor())
 
 
 def main_stdio() -> None:

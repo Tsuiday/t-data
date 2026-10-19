@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASX Short Positions API</title>
-<meta name="description" content="Daily ASIC short positions for every ASX security since 2010, as a REST API and an MCP server for AI assistants.">
+<title>tradingdata-ai</title>
+<meta name="description" content="Trading data for AI assistants: ASX short positions since 2010 and US insider trades since 2006, as a REST API and an MCP server.">
 <style>
   :root { --ink:#14181f; --muted:#5b6472; --line:#e3e6eb; --bg:#fbfbfc; --card:#fff; --accent:#0b6e4f; --code:#f3f5f7; }
   @media (prefers-color-scheme: dark) { :root { --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a3039; --bg:#12151a; --card:#181c22; --accent:#4cc79a; --code:#1f242c; } }
@@ -30,10 +30,11 @@
 </head>
 <body>
 <main>
-  <h1>ASX short positions, as an API.</h1>
-  <p class="lead">Every daily short-position report ASIC has published since June 2010, cleaned into one consistent dataset — queryable over REST or straight from Claude, Cursor and other AI assistants via MCP.</p>
+  <h1>Trading data your AI can query directly.</h1>
+  <p class="lead">ASX short positions since 2010 and US insider trades since 2006, cleaned and consistent — over REST, or straight from Claude, Cursor and other AI assistants via MCP.</p>
 
   <div class="grid">
+    <div class="card"><h3>US insider trades</h3><p>Every SEC Form 3, 4 and 5 since 2006, updated daily: who bought or sold, at what price, in what role — with open-market purchases separated from grants and option exercises.</p></div>
     <div class="card"><h3>16 years, one format</h3><p>ASIC changed its file format in 2022 and its percentage scaling more than once. Short % here is recomputed from share counts, every day, for every security.</p></div>
     <div class="card"><h3>Built for AI tools</h3><p>An MCP endpoint lets an assistant answer "what's the most shorted lithium stock and how has that changed this month?" directly.</p></div>
     <div class="card"><h3>Honest dates</h3><p>Each row is labelled with its position date. ASIC publishes about four trading days later; we never pretend it's today's data.</p></div>
@@ -52,6 +53,9 @@ GET /v1/products?q=lithium                        search by code or name
 GET /v1/short-positions/{code}?from=&amp;to=&amp;format=csv  daily history for one code
 GET /v1/most-shorted?date=&amp;limit=20                most shorted on a date
 GET /v1/changes?reports_back=5&amp;direction=up        biggest moves in short %
+GET /v1/us/insiders/buying?days=30&amp;min_insiders=2   US companies with insider buying
+GET /v1/us/insiders/{ticker}?codes=P,S               insider trades for one US ticker
+GET /v1/us/insiders/{ticker}/summary?days=90          buying vs selling
 /docs                                              interactive reference</code></pre>
 
   <pre><code>curl -H "X-API-Key: asxs_…" https://tradingdata-ai.fly.dev/v1/most-shorted?limit=10</code></pre>
@@ -59,17 +63,18 @@ GET /v1/changes?reports_back=5&amp;direction=up        biggest moves in short %
   <h2>Use it from an AI assistant (MCP)</h2>
   <pre><code>{
   "mcpServers": {
-    "asx-shorts": {
+    "tradingdata-ai": {
       "type": "http",
       "url": "https://tradingdata-ai.fly.dev/mcp/",
       "headers": { "Authorization": "Bearer asxs_…" }
     }
   }
 }</code></pre>
-  <p>Tools: <code>search_products</code>, <code>short_history</code>, <code>most_shorted</code>, <code>short_changes</code>, <code>data_coverage</code>.</p>
+  <p>Tools: <code>us_insider_buying</code>, <code>us_insider_trades</code>, <code>us_insider_summary</code>, <code>search_products</code>, <code>short_history</code>, <code>most_shorted</code>, <code>short_changes</code>, <code>data_coverage</code>.</p>
 
   <footer>
-    <p>Data: © Australian Securities &amp; Investments Commission: Reproduced with permission. Short selling position reporting data is licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. This service is independent and is not affiliated with, endorsed or sponsored by ASIC.</p>
+    <p>US insider data: U.S. Securities and Exchange Commission, EDGAR (Forms 3, 4, 5).</p>
+    <p>ASX data: © Australian Securities &amp; Investments Commission: Reproduced with permission. Short selling position reporting data is licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. This service is independent and is not affiliated with, endorsed or sponsored by ASIC or the SEC.</p>
     <p>Reported short positions are aggregated disclosures and may differ from actual short interest. Not financial advice.</p>
   </footer>
 </main>

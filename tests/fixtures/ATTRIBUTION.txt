@@ -1,2 +1,3 @@
 Fixture files are excerpts of ASIC daily short-position reports.
 © Australian Securities & Investments Commission: Reproduced with permission. Licensed under CC BY 4.0.
+form4_joint_purchase.xml is an excerpt of a public SEC EDGAR Form 4 (accession 0001193125-26-197752).

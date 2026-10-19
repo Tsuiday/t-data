@@ -14,7 +14,7 @@ import threading
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from . import ingest
+from . import ingest, sec_insiders
 from .db import connect
 
 log = logging.getLogger("asx_shorts.scheduler")
@@ -70,6 +70,14 @@ class DailyIngest:
                 catch_up()
             except Exception:                         # never let one bad night kill the thread
                 log.exception("daily ingest failed")
+            try:
+                conn = connect()
+                try:
+                    log.info("SEC insider catch-up finished: %s", sec_insiders.catch_up(conn, log=log.info))
+                finally:
+                    conn.close()
+            except Exception:
+                log.exception("SEC insider catch-up failed")
             wake = next_run(datetime.now(SYDNEY), self.hour)
             log.info("next ingest at %s", wake.isoformat())
             if self._stop.wait((wake - datetime.now(SYDNEY)).total_seconds()):

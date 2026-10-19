@@ -7,3 +7,4 @@ data/
 .env
 ingest*.log
 serve.log
+insiders_backfill.log

@@ -1,8 +1,10 @@
-# ASX Short Positions API
+# tradingdata-ai
 
-Every daily short-position report ASIC has published since June 2010, cleaned
-into one dataset and served as a REST API plus an MCP server, so AI assistants
-can query it directly.
+Trading data that AI assistants can query directly, as a REST API plus an MCP
+server:
+
+- **ASX short positions:** every daily ASIC report since June 2010.
+- **US insider trades:** every SEC Form 3, 4 and 5 since January 2006, updated daily.
 
 **Live:** https://tradingdata-ai.fly.dev (Fly.io app `tradingdata-ai`, Sydney).
 
@@ -31,6 +33,32 @@ Built as a cheap demand test: if people pay for this, add director trades
     a fraction (0.05 = 5%).
   - Rows where the short count exceeds shares on issue, or the share count is
     zero, are dropped.
+
+## US insider trades (SEC Forms 3, 4, 5)
+
+- **History:** the SEC's quarterly
+  [Insider Transactions Data Sets](https://www.sec.gov/data-research/sec-markets-data/insider-transactions-data-sets)
+  (2006 onwards). The download links are read from that page, because the SEC
+  has moved the files between folders.
+- **Daily:** EDGAR's daily form index, plus each new filing's ownership XML.
+  Numbers are rounded to 2 decimals because the quarterly files are, so a trade
+  stays identical when its quarterly row replaces the daily one. Tested on 50
+  real filings across Forms 3, 4 and 5: identical.
+- **Keys:** a filing by its accession number; a trade by (accession, derivative,
+  position in the filing).
+- **Not stored:** footnotes (bulky legal text) and insiders' street addresses.
+- **Buying screens:** count open-market purchases only (code P on shares).
+  Grants (A), tax withholding (F) and option exercises (M) aren't decisions to
+  buy. A filing can list several insiders for one trade, for example a fund and
+  its general partner, so values are summed per trade, never per owner.
+- **Licence:** EDGAR is US government-published and freely reusable. Set
+  `SEC_USER_AGENT="name contact@domain"`; the SEC asks for ≤10 requests per
+  second, and the loader paces itself at 8.
+
+```sh
+uv run sec-insiders-ingest                    # all quarters + recent daily filings
+uv run sec-insiders-ingest --quarters 2026q2  # one quarter
+```
 
 ## Run locally
 
