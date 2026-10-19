@@ -10,7 +10,7 @@ primary_region = "syd"
   dockerfile = "Dockerfile"
 
 [env]
-  ASX_SHORTS_DB = "/data/asx_shorts.sqlite"
+  ASX_SHORTS_DB = "/data/tradingdata.sqlite"
   ASX_SHORTS_HOSTS = "tradingdata-ai.fly.dev"
   ASX_SHORTS_INGEST_HOUR = "20"
 
