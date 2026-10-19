@@ -1,0 +1,40 @@
+# Fly.io config for the ASX Short Positions API.
+# One always-on machine in Sydney with a 3 GB volume (sized for ~10 years of
+# data plus maintenance headroom; see README). The daily ASIC update runs
+# inside the app, because a volume can attach to only one machine.
+
+app = "asx-shorts"
+primary_region = "syd"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ASX_SHORTS_DB = "/data/asx_shorts.sqlite"
+  ASX_SHORTS_HOSTS = "asx-shorts.fly.dev"
+  ASX_SHORTS_INGEST_HOUR = "20"
+
+[[mounts]]
+  source = "asx_data"
+  destination = "/data"
+  initial_size = "3gb"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Always on: the daily update runs in this machine, and SQLite on one volume
+  # means exactly one machine.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

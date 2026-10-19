@@ -19,6 +19,7 @@ def client(tmp_path, monkeypatch):
     path = tmp_path / "t.sqlite"
     monkeypatch.setattr(db, "DEFAULT_PATH", path)
     monkeypatch.setenv("ASX_SHORTS_HOSTS", "testserver")
+    monkeypatch.setenv("ASX_SHORTS_INGEST", "off")
     conn = db.connect(path)
     old = (FIX / "RR20150701-001-SSDailyAggShortPos.csv").read_bytes()
     new = (FIX / "RR20250701-001-SSDailyAggShortPos.csv").read_bytes()

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import csv
 import io
+import logging
 import os
 import re
 from contextlib import asynccontextmanager, closing
@@ -26,6 +27,10 @@ from . import asic, queries
 from .db import connect
 from .keys import Plan, count_request, lookup
 from .mcp_server import current_plan, mcp
+from .scheduler import DailyIngest
+
+# Make the daily-ingest thread's progress visible in `fly logs`.
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
 CODE = re.compile(r"^[A-Z0-9]{1,6}$")
 LANDING = (Path(__file__).parent / "landing.html").read_text(encoding="utf-8")
@@ -129,8 +134,13 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        async with mcp.session_manager.run():
-            yield
+        daily = DailyIngest()
+        daily.start()
+        try:
+            async with mcp.session_manager.run():
+                yield
+        finally:
+            daily.stop()
 
     application = FastAPI(
         title="ASX Short Positions API",
