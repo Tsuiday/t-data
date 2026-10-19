@@ -2,8 +2,9 @@
 
     uv run asx-shorts-serve --port 8000
 
-Auth: `X-API-Key: asxs_…` (or `Authorization: Bearer asxs_…`). /, /healthz and
-/v1/coverage are public. Every data response carries ASIC's required attribution.
+Auth: `X-API-Key: asxs_…` (or `Authorization: Bearer asxs_…`). /, /terms, /healthz,
+/v1/coverage, POST /v1/keys (self-serve free key) and POST /v1/pro-waitlist are
+public. Every data response carries its source's attribution.
 """
 from __future__ import annotations
 
@@ -20,12 +21,13 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+from pydantic import BaseModel, Field
 
 from mcp.server.transport_security import TransportSecuritySettings
 
-from . import asic, insider_queries, queries, sec_insiders
+from . import asic, insider_queries, queries, sec_insiders, signup
 from .db import connect
-from .keys import Plan, count_request, lookup
+from .keys import PLANS, Plan, count_request, lookup
 from .mcp_server import current_plan, mcp
 from .scheduler import DailyIngest
 
@@ -34,6 +36,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname
 
 CODE = re.compile(r"^[A-Z0-9]{1,6}$")
 LANDING = (Path(__file__).parent / "landing.html").read_text(encoding="utf-8")
+TERMS = (Path(__file__).parent / "terms.html").read_text(encoding="utf-8")
 
 
 def _key_from(headers: dict[str, str], query_key: str | None = None) -> str:
@@ -43,21 +46,25 @@ def _key_from(headers: dict[str, str], query_key: str | None = None) -> str:
     return headers.get("x-api-key", "").strip() or (query_key or "").strip()
 
 
-def _authorise(key: str) -> tuple[Plan, int]:
-    """Return (plan, requests used today) or raise 401/429."""
+def _authorise(key: str, route: str | None = None) -> tuple[Plan, int]:
+    """Return (plan, requests used today) or raise 401/429. `route` feeds the anonymous usage counts."""
     with closing(connect()) as conn:
         found = lookup(conn, key)
         if not found:
-            raise HTTPException(401, {"error": "invalid_key", "message": "Send a valid key in X-API-Key."})
+            raise HTTPException(401, {"error": "invalid_key",
+                                      "message": "Send a valid key in X-API-Key. Get a free key at https://tradingdata-ai.fly.dev/"})
         key_hash, plan = found
         used = count_request(conn, key_hash)
+        if route:
+            signup.record_route(conn, route, plan.name)
     if used > plan.daily_requests:
         raise HTTPException(429, {"error": "daily_limit", "message": f"{plan.name} plan allows {plan.daily_requests} requests per day."})
     return plan, used
 
 
 def require_key(request: Request, api_key: Annotated[str | None, Query(include_in_schema=False)] = None) -> Plan:
-    plan, used = _authorise(_key_from({k.lower(): v for k, v in request.headers.items()}, api_key))
+    route = getattr(request.scope.get("route"), "path", request.url.path)
+    plan, used = _authorise(_key_from({k.lower(): v for k, v in request.headers.items()}, api_key), route)
     request.state.rate = (plan.daily_requests, max(0, plan.daily_requests - used))
     return plan
 
@@ -146,9 +153,10 @@ def create_app() -> FastAPI:
             daily.stop()
 
     application = FastAPI(
-        title="ASX Short Positions API",
-        version="0.1.0",
-        description="Daily ASIC short positions for every ASX security since June 2010. " + asic.ATTRIBUTION,
+        title="tradingdata-ai",
+        version="0.2.0",
+        description=("Trading data for AI assistants: daily ASIC short positions for every ASX security since "
+                     "June 2010, and US insider trades (SEC Forms 3/4/5) since 2006. " + asic.ATTRIBUTION),
         lifespan=lifespan,
     )
     application.mount("/mcp", MCPAuth(mcp_app))
@@ -163,6 +171,50 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
 def landing() -> str:
     return LANDING
+
+
+@router.get("/terms", response_class=HTMLResponse, include_in_schema=False)
+def terms() -> str:
+    return TERMS
+
+
+def _client_ip(request: Request) -> str:
+    # Fly's proxy sets Fly-Client-IP; elsewhere fall back to the socket peer.
+    return request.headers.get("fly-client-ip") or (request.client.host if request.client else "unknown")
+
+
+class KeyRequest(BaseModel):
+    accept_terms: bool
+
+
+class WaitlistRequest(BaseModel):
+    email: str = Field(max_length=254)
+    use_case: str | None = Field(default=None, max_length=1000)
+
+
+@router.post("/v1/keys", include_in_schema=False)
+def create_key(request: Request, body: KeyRequest):
+    """Self-serve free key, shown once."""
+    if not body.accept_terms:
+        raise HTTPException(400, {"error": "terms", "message": "Please accept the terms to get a key."})
+    with closing(connect()) as conn:
+        try:
+            key = signup.create_free_key(conn, _client_ip(request))
+        except signup.SignupLimit as exc:
+            raise HTTPException(429, {"error": "signup_limit", "message": str(exc)})
+    free = PLANS["free"]
+    return {"key": key, "plan": free.name, "requests_per_day": free.daily_requests,
+            "history_days": free.history_days, "note": "Shown once. Store it now; it can't be recovered."}
+
+
+@router.post("/v1/pro-waitlist", include_in_schema=False)
+def pro_waitlist(body: WaitlistRequest):
+    with closing(connect()) as conn:
+        try:
+            signup.join_waitlist(conn, body.email, body.use_case)
+        except ValueError as exc:
+            raise HTTPException(400, {"error": "bad_email", "message": str(exc)})
+    return {"ok": True, "message": "Thanks. We'll email you when your Pro beta access is ready."}
 
 
 @router.get("/healthz", include_in_schema=False)

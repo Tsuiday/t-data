@@ -26,12 +26,43 @@
   th { color:var(--muted); font-weight:600; }
   a { color:var(--accent); }
   footer { margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  .signup { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; margin:0 0 28px; }
+  .signup h2 { margin:0 0 8px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  button { font:inherit; font-weight:600; background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 16px; cursor:pointer; }
+  button:disabled { opacity:.6; cursor:default; }
+  button.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); padding:6px 12px; }
+  input[type=email], textarea { font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:9px 10px; width:100%; max-width:420px; }
+  textarea { max-width:100%; min-height:70px; }
+  label.check { color:var(--muted); font-size:14px; }
+  .keybox { display:none; margin-top:12px; }
+  .keybox code { display:block; word-break:break-all; background:var(--code); border:1px solid var(--line); border-radius:8px; padding:10px; margin:6px 0; }
+  .msg { font-size:14px; color:var(--muted); margin:8px 0 0; }
+  .msg.err { color:#c0392b; }
+  .tag { font-size:12px; font-weight:600; color:var(--accent); border:1px solid var(--accent); border-radius:99px; padding:1px 8px; margin-left:6px; }
 </style>
 </head>
 <body>
 <main>
   <h1>Trading data your AI can query directly.</h1>
   <p class="lead">ASX short positions since 2010 and US insider trades since 2006, cleaned and consistent — over REST, or straight from Claude, Cursor and other AI assistants via MCP.</p>
+
+  <section class="signup" id="get-key">
+    <h2>Get a free API key</h2>
+    <p class="msg" style="margin:0 0 12px">No email needed. Works for the REST API and the MCP server.</p>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="terms"> I agree to the <a href="/terms">terms</a></label>
+      <button id="getkey" type="button">Get my key</button>
+    </div>
+    <p class="msg" id="keymsg" role="status"></p>
+    <div class="keybox" id="keybox">
+      <strong>Your key, shown once. Copy it now:</strong>
+      <code id="keyval"></code>
+      <div class="row"><button class="ghost" id="copykey" type="button">Copy</button><span class="msg" id="copied"></span></div>
+      <p class="msg">Free plan: 250 requests a day and the last 90 days of data. Try it:</p>
+      <pre><code id="trycurl"></code></pre>
+    </div>
+  </section>
 
   <div class="grid">
     <div class="card"><h3>US insider trades</h3><p>Every SEC Form 3, 4 and 5 since 2006, updated daily: who bought or sold, at what price, in what role — with open-market purchases separated from grants and option exercises.</p></div>
@@ -43,9 +74,21 @@
   <h2>Plans</h2>
   <table>
     <tr><th>Plan</th><th>History</th><th>Requests / day</th><th>MCP</th></tr>
-    <tr><td>Free</td><td>Last 90 days</td><td>250</td><td>Yes</td></tr>
-    <tr><td>Pro</td><td>Full history from June 2010</td><td>20,000</td><td>Yes</td></tr>
+    <tr><td>Free</td><td>Last 90 days of both datasets</td><td>250</td><td>Yes</td></tr>
+    <tr><td>Pro <span class="tag">free during beta</span></td><td>Full history: ASX since June 2010, US since 2006</td><td>20,000</td><td>Yes</td></tr>
   </table>
+
+  <section class="signup" id="pro" style="margin-top:16px">
+    <h2>Request Pro beta access</h2>
+    <p class="msg" style="margin:0 0 12px">Pro is free while we're in beta. Tell us what you'd use it for and we'll email you a Pro key.</p>
+    <form id="waitlist">
+      <p><input type="email" id="wl-email" placeholder="you@example.com" required autocomplete="email"></p>
+      <p><textarea id="wl-use" maxlength="1000" placeholder="What would you use it for? (optional)"></textarea></p>
+      <button type="submit" id="wl-btn">Request access</button>
+      <p class="msg" id="wl-msg" role="status"></p>
+    </form>
+    <p class="msg">We only use your email to contact you about Pro. See <a href="/terms">privacy</a>.</p>
+  </section>
 
   <h2>Endpoints</h2>
   <pre><code>GET /v1/coverage                                  public — what's loaded
@@ -75,8 +118,48 @@ GET /v1/us/insiders/{ticker}/summary?days=90          buying vs selling
   <footer>
     <p>US insider data: U.S. Securities and Exchange Commission, EDGAR (Forms 3, 4, 5).</p>
     <p>ASX data: © Australian Securities &amp; Investments Commission: Reproduced with permission. Short selling position reporting data is licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. This service is independent and is not affiliated with, endorsed or sponsored by ASIC or the SEC.</p>
-    <p>Reported short positions are aggregated disclosures and may differ from actual short interest. Not financial advice.</p>
+    <p>Reported short positions are aggregated disclosures and may differ from actual short interest. Not financial advice. <a href="/terms">Terms and privacy</a> · <a href="mailto:support@trumis.com.au">support@trumis.com.au</a></p>
   </footer>
 </main>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  async function post(url, body) {
+    var r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    var data = {};
+    try { data = await r.json(); } catch (e) {}
+    if (!r.ok) throw new Error(data.message || "Something went wrong. Please try again.");
+    return data;
+  }
+  $("getkey").addEventListener("click", async function () {
+    var msg = $("keymsg");
+    msg.className = "msg"; msg.textContent = "";
+    if (!$("terms").checked) { msg.className = "msg err"; msg.textContent = "Please tick the box to accept the terms."; return; }
+    this.disabled = true;
+    try {
+      var d = await post("/v1/keys", { accept_terms: true });
+      $("keyval").textContent = d.key;
+      $("trycurl").textContent = 'curl -H "X-API-Key: ' + d.key + '" ' + location.origin + "/v1/most-shorted?limit=5";
+      $("keybox").style.display = "block";
+    } catch (e) {
+      msg.className = "msg err"; msg.textContent = e.message; this.disabled = false;
+    }
+  });
+  $("copykey").addEventListener("click", async function () {
+    try { await navigator.clipboard.writeText($("keyval").textContent); $("copied").textContent = "Copied."; }
+    catch (e) { $("copied").textContent = "Select the key and copy it manually."; }
+  });
+  $("waitlist").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    var msg = $("wl-msg"), btn = $("wl-btn");
+    msg.className = "msg"; msg.textContent = ""; btn.disabled = true;
+    try {
+      var d = await post("/v1/pro-waitlist", { email: $("wl-email").value, use_case: $("wl-use").value || null });
+      msg.textContent = d.message; this.reset();
+    } catch (e) { msg.className = "msg err"; msg.textContent = e.message; }
+    btn.disabled = false;
+  });
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terms and privacy · tradingdata-ai</title>
+<style>
+  :root { --ink:#14181f; --muted:#5b6472; --line:#e3e6eb; --bg:#fbfbfc; --accent:#0b6e4f; }
+  @media (prefers-color-scheme: dark) { :root { --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a3039; --bg:#12151a; --accent:#4cc79a; } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:40px 16px 64px; }
+  h1 { font-size:28px; margin:0 0 4px; }
+  h2 { font-size:18px; margin:32px 0 8px; }
+  p, li { color:var(--ink); }
+  .muted { color:var(--muted); }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="/">← tradingdata-ai</a></p>
+  <h1>Terms and privacy</h1>
+  <p class="muted">Beta service. Last updated 20 October 2026.</p>
+
+  <h2>The service</h2>
+  <p>tradingdata-ai provides market data through a REST API and an MCP server. It is in beta: endpoints, limits and plans may change. Before any paid plan starts we will say what it costs and what it includes, and nobody will be charged without agreeing first.</p>
+
+  <h2>Your API key</h2>
+  <ul>
+    <li>Keep your key private and use it within your plan's daily limit.</li>
+    <li>Don't try to get around the limits, for example by creating many free keys.</li>
+    <li>We may suspend or revoke keys that are abused or that put the service at risk.</li>
+  </ul>
+
+  <h2>Data sources and attribution</h2>
+  <ul>
+    <li><strong>ASX short positions:</strong> © Australian Securities &amp; Investments Commission: Reproduced with permission. Licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. If you republish this data, keep that attribution.</li>
+    <li><strong>US insider trades:</strong> from the U.S. Securities and Exchange Commission's EDGAR system (Forms 3, 4 and 5).</li>
+    <li>This service is independent and is not affiliated with, endorsed or sponsored by ASIC, the SEC or ASX.</li>
+  </ul>
+
+  <h2>Not financial advice</h2>
+  <p>The data is factual information as reported to regulators. Nothing here is a recommendation to buy, sell or hold any financial product, and it doesn't take into account anyone's objectives, financial situation or needs. Consider getting advice from a licensed adviser before making investment decisions.</p>
+
+  <h2>Accuracy</h2>
+  <p>We process the source data carefully, but it is provided as is. It can be delayed, incomplete or contain errors, including errors in the original filings. ASIC publishes short positions about four trading days after the position date. To the extent the law allows, we aren't liable for losses arising from use of the data. Nothing in these terms excludes rights you have under the Australian Consumer Law.</p>
+
+  <h2>Privacy</h2>
+  <p>We collect as little as we can:</p>
+  <ul>
+    <li><strong>API keys:</strong> we store only a one-way hash of each key, never the key itself.</li>
+    <li><strong>Usage:</strong> request counts per key per day, and anonymous totals per endpoint or tool, to enforce limits and see which data is useful.</li>
+    <li><strong>Sign-up:</strong> getting a free key needs no name or email. To limit abuse, the IP address used is stored as a salted hash and deleted after two days.</li>
+    <li><strong>Pro waitlist:</strong> if you join, we keep your email and anything you tell us about your use, only to contact you about Pro access and the service.</li>
+    <li><strong>Hosting:</strong> the service runs on Fly.io in Sydney. Like any web host, Fly.io's infrastructure processes IP addresses and short-lived request logs.</li>
+  </ul>
+  <p>No cookies, no advertising trackers, and we don't sell or share your data. To see or delete what we hold about you, or to leave the waitlist, email <a href="mailto:support@trumis.com.au">support@trumis.com.au</a>.</p>
+
+  <h2>Contact</h2>
+  <p><a href="mailto:support@trumis.com.au">support@trumis.com.au</a></p>
+</main>
+</body>
+</html>

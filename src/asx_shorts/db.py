@@ -46,6 +46,27 @@ CREATE TABLE IF NOT EXISTS usage (
     requests INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (key_hash, day)
 ) WITHOUT ROWID;
+-- Self-serve sign-up limits. Client IPs are stored only as a salted hash and
+-- deleted after two days; they exist to stop one machine minting endless keys.
+CREATE TABLE IF NOT EXISTS signups (
+    day     TEXT NOT NULL,
+    ip_hash TEXT NOT NULL,
+    keys    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, ip_hash)
+) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS waitlist (
+    email      TEXT PRIMARY KEY,
+    use_case   TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- Anonymous demand signal: requests per endpoint / MCP tool per day and plan.
+CREATE TABLE IF NOT EXISTS route_usage (
+    day      TEXT NOT NULL,
+    route    TEXT NOT NULL,
+    tier     TEXT NOT NULL,
+    requests INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, route, tier)
+) WITHOUT ROWID;
 """
 
 

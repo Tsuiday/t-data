@@ -11,7 +11,7 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
-from . import asic, insider_queries, queries, sec_insiders
+from . import asic, insider_queries, queries, sec_insiders, signup
 from .db import connect
 from .keys import PLANS, Plan
 
@@ -38,7 +38,17 @@ def _wrap(payload: dict[str, Any]) -> dict[str, Any]:
     return {**payload, "attribution": asic.ATTRIBUTION, "licence": asic.LICENCE, "plan": current_plan.get().name}
 
 
-def _call(fn, *args) -> dict[str, Any]:
+def _track(tool: str) -> None:
+    """Anonymous per-tool counts (the demand report); never let it break a call."""
+    try:
+        with closing(connect()) as conn:
+            signup.record_route(conn, "mcp:" + tool, current_plan.get().name)
+    except Exception:
+        pass
+
+
+def _call(tool: str, fn, *args) -> dict[str, Any]:
+    _track(tool)
     with closing(connect(readonly=True)) as conn:
         try:
             return _wrap(fn(conn, *args))
@@ -51,6 +61,7 @@ def _call(fn, *args) -> dict[str, Any]:
 @mcp.tool()
 def search_products(query: str, limit: int = 20) -> dict[str, Any]:
     """Find ASX codes by code or company name (e.g. 'BHP', 'lithium', 'flight centre')."""
+    _track("search_products")
     with closing(connect(readonly=True)) as conn:
         return _wrap({"results": queries.search(conn, query, max(1, min(limit, 50)))})
 
@@ -58,13 +69,13 @@ def search_products(query: str, limit: int = 20) -> dict[str, Any]:
 @mcp.tool()
 def short_history(code: str, start: str | None = None, end: str | None = None) -> dict[str, Any]:
     """Daily short position history for one ASX code. Dates are YYYY-MM-DD; omit for all available."""
-    return _call(queries.history, code, start, end, current_plan.get().floor())
+    return _call("short_history", queries.history, code, start, end, current_plan.get().floor())
 
 
 @mcp.tool()
 def most_shorted(date: str | None = None, limit: int = 20, min_shares_on_issue: int = 0) -> dict[str, Any]:
     """The most heavily shorted ASX securities on a date (default: latest report)."""
-    return _call(queries.most_shorted, date, max(1, min(limit, 100)), max(0, min_shares_on_issue), current_plan.get().floor())
+    return _call("most_shorted", queries.most_shorted, date, max(1, min(limit, 100)), max(0, min_shares_on_issue), current_plan.get().floor())
 
 
 @mcp.tool()
@@ -73,20 +84,21 @@ def short_changes(reports_back: int = 5, direction: str = "up", limit: int = 20)
     direction: 'up' (shorting increased) or 'down' (shorts covered)."""
     if direction not in ("up", "down"):
         direction = "up"
-    return _call(queries.changes, max(1, min(reports_back, 250)), max(1, min(limit, 100)), direction, current_plan.get().floor())
+    return _call("short_changes", queries.changes, max(1, min(reports_back, 250)), max(1, min(limit, 100)), direction, current_plan.get().floor())
 
 
 @mcp.tool()
 def data_coverage() -> dict[str, Any]:
     """First and last report dates, number of reports and securities loaded."""
-    return _call(queries.coverage)
+    return _call("data_coverage", queries.coverage)
 
 
 def _wrap_sec(payload: dict[str, Any]) -> dict[str, Any]:
     return {**payload, "attribution": sec_insiders.ATTRIBUTION, "plan": current_plan.get().name}
 
 
-def _call_sec(fn, *args) -> dict[str, Any]:
+def _call_sec(tool: str, fn, *args) -> dict[str, Any]:
+    _track(tool)
     with closing(connect(readonly=True)) as conn:
         try:
             return _wrap_sec(fn(conn, *args))
@@ -99,7 +111,7 @@ def us_insider_trades(ticker: str, start: str | None = None, end: str | None = N
                       codes: list[str] | None = None, limit: int = 100) -> dict[str, Any]:
     """Insider transactions for one US ticker from SEC Forms 3/4/5, newest first.
     Dates filter the filing date (YYYY-MM-DD). codes e.g. ["P"] for open-market purchases, ["P","S"]."""
-    return _call_sec(insider_queries.trades, ticker, start, end, codes, max(1, min(limit, 500)), current_plan.get().floor())
+    return _call_sec("us_insider_trades", insider_queries.trades, ticker, start, end, codes, max(1, min(limit, 500)), current_plan.get().floor())
 
 
 @mcp.tool()
@@ -110,14 +122,14 @@ def us_insider_buying(days: int = 30, min_value: float = 100_000, role: str = "o
     Use min_insiders >= 2 to find 'cluster buying' by several insiders."""
     if role not in insider_queries.ROLE_FILTERS:
         role = "officer_or_director"
-    return _call_sec(insider_queries.buying, max(1, min(days, 3650)), max(0.0, min_value), role,
+    return _call_sec("us_insider_buying", insider_queries.buying, max(1, min(days, 3650)), max(0.0, min_value), role,
                      max(1, min(min_insiders, 50)), max(1, min(limit, 100)), current_plan.get().floor())
 
 
 @mcp.tool()
 def us_insider_summary(ticker: str, days: int = 90) -> dict[str, Any]:
     """Open-market insider buying vs selling (US$) for one US ticker over the last N days."""
-    return _call_sec(insider_queries.summary, ticker, max(1, min(days, 3650)), current_plan.get().floor())
+    return _call_sec("us_insider_summary", insider_queries.summary, ticker, max(1, min(days, 3650)), current_plan.get().floor())
 
 
 def main_stdio() -> None:

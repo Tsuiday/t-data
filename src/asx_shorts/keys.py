@@ -3,6 +3,7 @@
     uv run asx-shorts-keys issue "alice@example.com" --tier free
     uv run asx-shorts-keys revoke <key-prefix>
     uv run asx-shorts-keys list
+    uv run asx-shorts-keys stats --days 14    # sign-ups, usage by endpoint, Pro waitlist
 
 Keys look like `asxs_<32 url-safe chars>`. Only their SHA-256 is stored, so a
 lost key can't be recovered — issue a new one.
@@ -83,6 +84,8 @@ def main() -> None:
     r = sub.add_parser("revoke")
     r.add_argument("hash_prefix", help="first 8+ chars of the key hash shown by `list`")
     sub.add_parser("list")
+    st = sub.add_parser("stats")
+    st.add_argument("--days", type=int, default=14)
     args = ap.parse_args()
     conn = connect(args.db)
     if args.cmd == "issue":
@@ -97,6 +100,9 @@ def main() -> None:
                 (args.hash_prefix + "%",),
             ).rowcount
         print(f"revoked {n}")
+    elif args.cmd == "stats":
+        from .signup import print_stats
+        print_stats(conn, args.days)
     else:
         for row in conn.execute(
             """SELECT k.key_hash, k.label, k.tier, k.created_at, k.revoked_at,

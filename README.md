@@ -86,10 +86,26 @@ Auth is `X-API-Key: asxs_…` or `Authorization: Bearer asxs_…`.
 | Plan | History | Requests/day |
 |---|---|---|
 | free | last 90 days | 250 |
-| pro | full history from 2010 | 20,000 |
+| pro | full history (ASX from 2010, US from 2006) | 20,000 |
 
-Plans live in `src/asx_shorts/keys.py`. There's no billing yet: issue pro
-keys by hand until demand is proven.
+Plans live in `src/asx_shorts/keys.py`. There's no billing yet: Pro is a free
+beta, issued by hand to people on the waitlist.
+
+**Sign-up.** The landing page issues free keys instantly (`POST /v1/keys`, no
+email). Each network may create 3 keys a day (`SIGNUP_PER_IP_DAILY`) and
+everyone together 300 (`SIGNUP_GLOBAL_DAILY`). IPs are stored only as a hash
+salted with the `SIGNUP_SALT` secret, and deleted after two days. People ask for
+Pro through `POST /v1/pro-waitlist` (email + optional use case). Terms and
+privacy are at `/terms`.
+
+**Demand report.** Requests are also counted anonymously per endpoint and MCP
+tool. To see sign-ups, usage by endpoint, free keys hitting the limit, repeat
+users and the waitlist:
+
+```sh
+fly ssh console -a tradingdata-ai -C "setpriv --reuid=app --regid=app --init-groups \
+  /app/.venv/bin/asx-shorts-keys stats --days 14"
+```
 
 ## MCP
 
@@ -107,7 +123,10 @@ claude mcp add asx-shorts -- uv --directory /path/to/asx-shorts run asx-shorts-m
 ## Deploy
 
 Production runs on Fly.io as app `tradingdata-ai` in Sydney (`fly.toml`): one
-always-on shared-cpu-1x/512 MB machine with a 3 GB encrypted volume at `/data`.
+always-on shared-cpu-1x/512 MB machine with an 8 GB encrypted volume at `/data`
+(the database, `/data/tradingdata.sqlite`, is about 2.3 GB and grows about
+100 MB a year; compacting it temporarily needs twice its size). Secrets:
+`SEC_USER_AGENT` (contact the SEC requires) and `SIGNUP_SALT`.
 The daily update runs inside the app, because a Fly volume attaches to only one
 machine.
 
@@ -138,8 +157,12 @@ src/asx_shorts/asic.py        download + parse both ASIC formats
 src/asx_shorts/ingest.py      incremental loader (CLI)
 src/asx_shorts/db.py          SQLite schema
 src/asx_shorts/queries.py     shared read queries
-src/asx_shorts/keys.py        API keys, plans, daily limits (CLI)
+src/asx_shorts/keys.py        API keys, plans, daily limits (CLI, incl. `stats`)
+src/asx_shorts/signup.py      self-serve keys, Pro waitlist, usage counts
+src/asx_shorts/sec_insiders.py   SEC Forms 3/4/5 loader (quarterly files + daily index)
+src/asx_shorts/insider_queries.py  US insider read queries
 src/asx_shorts/api.py         FastAPI REST + /mcp mount + auth
 src/asx_shorts/mcp_server.py  MCP tools (remote and stdio)
-src/asx_shorts/landing.html   landing/docs page
+src/asx_shorts/landing.html   landing/docs page with sign-up
+src/asx_shorts/terms.html     terms and privacy
 ```
