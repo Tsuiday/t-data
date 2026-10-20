@@ -3,108 +3,361 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>tradingdata-ai</title>
+<title>tradingdata-ai · ASX short positions and US insider trades for AI assistants</title>
 <meta name="description" content="Trading data for AI assistants: ASX short positions since 2010 and US insider trades since 2006, as a REST API and an MCP server.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-  :root { --ink:#14181f; --muted:#5b6472; --line:#e3e6eb; --bg:#fbfbfc; --card:#fff; --accent:#0b6e4f; --code:#f3f5f7; }
-  @media (prefers-color-scheme: dark) { :root { --ink:#e8ebf0; --muted:#9aa3b0; --line:#2a3039; --bg:#12151a; --card:#181c22; --accent:#4cc79a; --code:#1f242c; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
-  main { max-width:860px; margin:0 auto; padding:48px 16px 64px; }
-  h1 { font-size:34px; line-height:1.15; margin:0 0 12px; letter-spacing:-.01em; }
-  h2 { font-size:20px; margin:40px 0 12px; }
-  p.lead { color:var(--muted); font-size:18px; margin:0 0 24px; max-width:60ch; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
-  .card h3 { margin:0 0 6px; font-size:16px; }
-  .card p, .card li { color:var(--muted); font-size:14px; margin:0; }
-  .card ul { margin:8px 0 0; padding-left:18px; }
-  pre { background:var(--code); border:1px solid var(--line); border-radius:10px; padding:14px; overflow-x:auto; font-size:13px; }
-  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
-  table { width:100%; border-collapse:collapse; font-size:14px; }
-  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { color:var(--muted); font-weight:600; }
+  :root {
+    --ink:#0e1626; --muted:#4a5568; --line:#d9dee5; --bg:#ffffff; --paper:#f4f6f8;
+    --accent:#0b6e4f; --accent-ink:#ffffff; --tint:#e6f3ee;
+    --code-bg:#0e1626; --code-ink:#e8edf3; --code-dim:#9aa3b0; --err:#b42318;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:#e8edf3; --muted:#9aa3b0; --line:#1f2733; --bg:#0b1220; --paper:#111a28;
+      --accent:#4cc79a; --accent-ink:#0b1220; --tint:rgba(76,199,154,.14);
+      --code-bg:#111a28; --code-ink:#e8edf3; --code-dim:#9aa3b0; --err:#f97066;
+    }
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; }
+  code, pre, .mono { font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; }
   a { color:var(--accent); }
-  footer { margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
-  .signup { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; margin:0 0 28px; }
-  .signup h2 { margin:0 0 8px; }
+  h1, h2, h3 { margin:0; font-weight:600; letter-spacing:-.015em; }
+  p { margin:0; }
+  .wrap { max-width:1200px; margin:0 auto; padding:0 24px; }
+  .band { border-bottom:1px solid var(--line); }
+  .paper { background:var(--paper); }
+  .section { padding:72px 0; }
+  .section-head { display:flex; flex-direction:column; gap:10px; max-width:64ch; margin-bottom:36px; }
+  .section-head h2 { font-size:32px; line-height:1.15; }
+  .section-head p { font-size:17px; color:var(--muted); }
+  .eyebrow { font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); font-weight:500; }
+  .label { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+
+  /* header */
+  .top { display:flex; align-items:center; gap:24px 32px; flex-wrap:wrap; min-height:64px; padding:10px 24px; }
+  .brand { display:flex; align-items:center; gap:10px; color:var(--ink); text-decoration:none; font-weight:600; font-size:17px; letter-spacing:-.01em; }
+  .brand svg { flex-shrink:0; }
+  .nav { display:flex; gap:20px; flex-wrap:wrap; font-size:15px; font-weight:500; }
+  .nav a { color:var(--ink); text-decoration:none; }
+  .nav a:hover { color:var(--accent); }
+  .top-right { margin-left:auto; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .asat { display:flex; align-items:center; gap:8px; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:13px; color:var(--muted); min-height:20px; text-decoration:none; }
+  .asat:hover { color:var(--ink); }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); display:inline-block; }
+
+  /* buttons and forms */
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:11px 18px; border-radius:6px; border:1px solid transparent; font:inherit; font-weight:600; font-size:15px; text-decoration:none; cursor:pointer; }
+  .btn-primary { background:var(--accent); color:var(--accent-ink); }
+  .btn-primary:hover { filter:brightness(1.08); }
+  .btn-secondary { background:var(--bg); color:var(--ink); border-color:var(--line); }
+  .btn-secondary:hover { border-color:var(--muted); }
+  .btn-outline { background:transparent; color:var(--accent); border-color:var(--accent); }
+  .btn-lg { min-height:48px; padding:13px 22px; font-size:16px; }
+  .btn:disabled { opacity:.6; cursor:default; filter:none; }
+  input[type=email], textarea { font:inherit; font-size:15px; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:11px 12px; width:100%; min-height:44px; }
+  input[type=email]:focus, textarea:focus { outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+  textarea { resize:vertical; min-height:72px; }
+  label { font-size:14px; color:var(--muted); }
+  .check { display:flex; gap:10px; align-items:flex-start; min-height:44px; }
+  .check input { width:18px; height:18px; margin:3px 0 0; accent-color:var(--accent); flex-shrink:0; }
+  .msg { font-size:14px; color:var(--muted); }
+  .msg.err { color:var(--err); }
+  .msg:empty { display:none; }
+
+  /* hero */
+  .hero { display:flex; flex-wrap:wrap; gap:48px 56px; align-items:center; padding:72px 24px 64px; }
+  .hero-copy { flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:22px; }
+  .hero h1 { font-size:clamp(36px,5vw,56px); line-height:1.08; letter-spacing:-.02em; max-width:14ch; }
+  .lead { font-size:20px; line-height:1.5; color:var(--muted); max-width:54ch; }
+  .cta-row { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .fine { font-size:14px; color:var(--muted); }
+  .coverage { flex:1 1 400px; min-width:0; max-width:560px; background:var(--paper); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .coverage-head { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:13px; }
+  .coverage-head span:last-child { color:var(--muted); font-size:12px; }
+  .coverage-body { padding:20px; display:flex; flex-direction:column; gap:20px; }
+  .dataset { display:flex; flex-direction:column; gap:10px; }
+  .dataset-title { display:flex; justify-content:space-between; gap:12px; align-items:baseline; flex-wrap:wrap; }
+  .dataset-title strong { font-weight:600; font-size:15px; }
+  .dataset-title span { font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; color:var(--muted); }
+  .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+  .stat { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .stat b { font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:22px; font-weight:500; letter-spacing:-.01em; min-height:33px; white-space:nowrap; }
+  .stat span { font-size:12px; color:var(--muted); }
+  .range { font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:13px; min-height:20px; }
+  .rule { height:1px; background:var(--line); }
+  .coverage-foot { padding:12px 20px; border-top:1px solid var(--line); font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:flex-start; }
+  .coverage-foot svg { flex-shrink:0; margin-top:2px; }
+
+  /* sources strip */
+  .strip { display:flex; flex-wrap:wrap; gap:16px 40px; padding:24px; font-size:14px; }
+  .strip > div { flex:1 1 220px; display:flex; gap:10px; align-items:flex-start; }
+  .strip svg { flex-shrink:0; margin-top:2px; }
+  .strip strong { font-weight:600; }
+
+  /* cards */
+  .cards { display:flex; flex-wrap:wrap; gap:24px; }
+  .card { flex:1 1 480px; min-width:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; background:var(--bg); }
+  .card-head { padding:20px 24px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+  .card-head h3 { font-size:20px; }
+  .card-head p { font-size:14px; color:var(--muted); margin-top:4px; }
+  .pill { font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; background:var(--tint); color:var(--accent); padding:4px 8px; border-radius:4px; font-weight:500; white-space:nowrap; }
+  .card-foot { padding:12px 24px; font-size:12px; color:var(--muted); border-top:1px solid var(--line); margin-top:auto; }
+  .tbl { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  td { padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td { border-bottom:0; }
+  th:first-child, td:first-child { padding-left:24px; }
+  th:last-child, td:last-child { padding-right:24px; }
+  td.code { font-family:"IBM Plex Mono",ui-monospace,monospace; font-weight:600; }
+  td.num, th.num { text-align:right; font-family:"IBM Plex Mono",ui-monospace,monospace; }
+  td.num b { font-weight:600; }
+  .chips { padding:16px 24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px; }
+  .chip-row { display:flex; flex-wrap:wrap; gap:8px; font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:12px; }
+  .chip { border:1px solid var(--line); color:var(--muted); border-radius:4px; padding:3px 8px; }
+  .chip.on { border-color:var(--accent); color:var(--accent); }
+  .chip.soft { background:var(--paper); color:var(--ink); }
+
+  /* pillars */
+  .pillars { display:flex; flex-wrap:wrap; gap:24px; }
+  .pillar { flex:1 1 260px; min-width:0; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:24px; display:flex; flex-direction:column; gap:10px; }
+  .pillar .eyebrow { letter-spacing:0; text-transform:none; font-size:12px; }
+  .pillar h3 { font-size:18px; }
+  .pillar p { font-size:14px; color:var(--muted); }
+
+  /* code */
+  .two-col { display:flex; flex-wrap:wrap; gap:24px; }
+  .col { flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:12px; }
+  .col-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .col-head h3 { font-size:18px; }
+  .col-head span { font-size:13px; color:var(--muted); }
+  pre { margin:0; background:var(--code-bg); color:var(--code-ink); border:1px solid var(--line); border-radius:10px; padding:18px 20px; font-size:13px; line-height:1.6; overflow-x:auto; }
+  pre .dim { color:var(--code-dim); }
+  .note { border:1px solid var(--line); border-radius:10px; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
+  .note p { font-size:14px; color:var(--muted); }
+
+  /* plans */
+  .plans { display:flex; flex-wrap:wrap; gap:24px; align-items:stretch; }
+  .plan { flex:1 1 400px; min-width:0; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:28px; display:flex; flex-direction:column; gap:18px; }
+  .plan.pro { border-color:var(--accent); }
+  .plan-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .plan-head h3 { font-size:22px; }
+  .plan-head .mono { font-size:13px; color:var(--muted); }
+  dl { margin:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px; font-size:14px; }
+  dl div { display:flex; flex-direction:column; gap:2px; }
+  dt { color:var(--muted); }
+  dd { margin:0; font-weight:600; }
+  form { display:flex; flex-direction:column; gap:12px; }
+  .keybox { display:none; flex-direction:column; gap:10px; }
+  .keybox.show { display:flex; }
+  .keybox code.key { display:block; word-break:break-all; background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:10px 12px; font-size:14px; }
   .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-  button { font:inherit; font-weight:600; background:var(--accent); color:#fff; border:0; border-radius:8px; padding:10px 16px; cursor:pointer; }
-  button:disabled { opacity:.6; cursor:default; }
-  button.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); padding:6px 12px; }
-  input[type=email], textarea { font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:9px 10px; width:100%; max-width:420px; }
-  textarea { max-width:100%; min-height:70px; }
-  label.check { color:var(--muted); font-size:14px; }
-  .keybox { display:none; margin-top:12px; }
-  .keybox code { display:block; word-break:break-all; background:var(--code); border:1px solid var(--line); border-radius:8px; padding:10px; margin:6px 0; }
-  .msg { font-size:14px; color:var(--muted); margin:8px 0 0; }
-  .msg.err { color:#c0392b; }
-  .tag { font-size:12px; font-weight:600; color:var(--accent); border:1px solid var(--accent); border-radius:99px; padding:1px 8px; margin-left:6px; }
+
+  /* footer */
+  footer { padding:40px 0 48px; font-size:13px; color:var(--muted); line-height:1.6; display:flex; flex-direction:column; gap:18px; }
+  .foot-top { display:flex; flex-wrap:wrap; gap:16px 32px; align-items:center; justify-content:space-between; }
+  .foot-nav { display:flex; flex-wrap:wrap; gap:20px; }
+
+  @media (max-width: 640px) {
+    .section { padding:48px 0; }
+    .hero { padding:40px 24px; }
+    .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .top-right { margin-left:0; }
+    .plan, .pillar { padding:20px; }
+    th:first-child, td:first-child { padding-left:16px; }
+    th:last-child, td:last-child { padding-right:16px; }
+    .card-head, .card-foot, .chips { padding-left:16px; padding-right:16px; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>Trading data your AI can query directly.</h1>
-  <p class="lead">ASX short positions since 2010 and US insider trades since 2006, cleaned and consistent — over REST, or straight from Claude, Cursor and other AI assistants via MCP.</p>
-
-  <section class="signup" id="get-key">
-    <h2>Get a free API key</h2>
-    <p class="msg" style="margin:0 0 12px">No email needed. Works for the REST API and the MCP server.</p>
-    <div class="row">
-      <label class="check"><input type="checkbox" id="terms"> I agree to the <a href="/terms">terms</a></label>
-      <button id="getkey" type="button">Get my key</button>
+<header class="band">
+  <div class="wrap top">
+    <a class="brand" href="/" aria-label="tradingdata-ai home">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="3" fill="var(--accent)"/><rect x="5" y="11" width="2.5" height="5" fill="var(--accent-ink)"/><rect x="8.75" y="8" width="2.5" height="8" fill="var(--accent-ink)"/><rect x="12.5" y="4" width="2.5" height="12" fill="var(--accent-ink)"/></svg>
+      <span>tradingdata-ai</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="#datasets">Datasets</a>
+      <a href="#reliability">Reliability</a>
+      <a href="/docs">Docs</a>
+      <a href="#integrate">MCP</a>
+      <a href="#plans">Plans</a>
+    </nav>
+    <div class="top-right">
+      <a class="asat" href="/v1/coverage" id="cov-asat-link"><span class="dot" aria-hidden="true"></span><span id="cov-asat">Coverage</span></a>
+      <a class="btn btn-primary" href="#get-key">Get a free key</a>
     </div>
-    <p class="msg" id="keymsg" role="status"></p>
-    <div class="keybox" id="keybox">
-      <strong>Your key, shown once. Copy it now:</strong>
-      <code id="keyval"></code>
-      <div class="row"><button class="ghost" id="copykey" type="button">Copy</button><span class="msg" id="copied"></span></div>
-      <p class="msg">Free plan: 250 requests a day and the last 90 days of data. Try it:</p>
-      <pre><code id="trycurl"></code></pre>
-    </div>
-  </section>
-
-  <div class="grid">
-    <div class="card"><h3>US insider trades</h3><p>Every SEC Form 3, 4 and 5 since 2006, updated daily: who bought or sold, at what price, in what role — with open-market purchases separated from grants and option exercises.</p></div>
-    <div class="card"><h3>16 years, one format</h3><p>ASIC changed its file format in 2022 and its percentage scaling more than once. Short % here is recomputed from share counts, every day, for every security.</p></div>
-    <div class="card"><h3>Built for AI tools</h3><p>An MCP endpoint lets an assistant answer "what's the most shorted lithium stock and how has that changed this month?" directly.</p></div>
-    <div class="card"><h3>Honest dates</h3><p>Each row is labelled with its position date. ASIC publishes about four trading days later; we never pretend it's today's data.</p></div>
   </div>
+</header>
 
-  <h2>Plans</h2>
-  <table>
-    <tr><th>Plan</th><th>History</th><th>Requests / day</th><th>MCP</th></tr>
-    <tr><td>Free</td><td>Last 90 days of both datasets</td><td>250</td><td>Yes</td></tr>
-    <tr><td>Pro <span class="tag">free during beta</span></td><td>Full history: ASX since June 2010, US since 2006</td><td>20,000</td><td>Yes</td></tr>
-  </table>
+<main>
+  <section class="band">
+    <div class="wrap hero">
+      <div class="hero-copy">
+        <div class="eyebrow">REST API · MCP server · CSV</div>
+        <h1>Trading data your AI can query directly.</h1>
+        <p class="lead">Every ASX short position since June 2010 and every US insider filing since January 2006. Cleaned once, dated honestly, served over REST or straight into Claude, Cursor and other assistants through MCP.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary btn-lg" href="#get-key">Get a free API key</a>
+          <a class="btn btn-secondary btn-lg" href="/docs">Read the API reference</a>
+        </div>
+        <p class="fine">No email, no card. Free keys are issued instantly: 250 requests a day, the last 90 days of both datasets.</p>
+      </div>
 
-  <section class="signup" id="pro" style="margin-top:16px">
-    <h2>Request Pro beta access</h2>
-    <p class="msg" style="margin:0 0 12px">Pro is free while we're in beta. Tell us what you'd use it for and we'll email you a Pro key.</p>
-    <form id="waitlist">
-      <p><input type="email" id="wl-email" placeholder="you@example.com" required autocomplete="email"></p>
-      <p><textarea id="wl-use" maxlength="1000" placeholder="What would you use it for? (optional)"></textarea></p>
-      <button type="submit" id="wl-btn">Request access</button>
-      <p class="msg" id="wl-msg" role="status"></p>
-    </form>
-    <p class="msg">We only use your email to contact you about Pro. See <a href="/terms">privacy</a>.</p>
+      <aside class="coverage" aria-label="Live coverage">
+        <div class="coverage-head"><span>GET /v1/coverage</span><span>public · no key needed</span></div>
+        <div class="coverage-body">
+          <div class="dataset">
+            <div class="dataset-title"><strong>ASX short positions</strong><span>source: ASIC · CC BY 4.0</span></div>
+            <div class="stats">
+              <div class="stat"><b id="cov-reports"></b><span>daily reports</span></div>
+              <div class="stat"><b id="cov-products"></b><span>securities</span></div>
+              <div class="stat"><b>daily</b><span>new report loaded</span></div>
+            </div>
+            <div class="range"><span id="cov-first"></span><span id="cov-arrow" hidden> → </span><span id="cov-last"></span></div>
+          </div>
+          <div class="rule"></div>
+          <div class="dataset">
+            <div class="dataset-title"><strong>US insider trades</strong><span>source: SEC EDGAR</span></div>
+            <div class="stats">
+              <div class="stat"><b>3 · 4 · 5</b><span>SEC forms covered</span></div>
+              <div class="stat"><b>2006</b><span>history starts</span></div>
+              <div class="stat"><b>daily</b><span>new filings loaded</span></div>
+            </div>
+            <div class="range">2006-01 → EDGAR daily index</div>
+          </div>
+        </div>
+        <div class="coverage-foot">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span>ASIC publishes each position date about four trading days later. Rows are dated by position date, never by the day we fetched them.</span>
+        </div>
+      </aside>
+    </div>
   </section>
 
-  <h2>Endpoints</h2>
-  <pre><code>GET /v1/coverage                                  public — what's loaded
-GET /v1/products?q=lithium                        search by code or name
-GET /v1/short-positions/{code}?from=&amp;to=&amp;format=csv  daily history for one code
-GET /v1/most-shorted?date=&amp;limit=20                most shorted on a date
-GET /v1/changes?reports_back=5&amp;direction=up        biggest moves in short %
-GET /v1/us/insiders/buying?days=30&amp;min_insiders=2   US companies with insider buying
-GET /v1/us/insiders/{ticker}?codes=P,S               insider trades for one US ticker
-GET /v1/us/insiders/{ticker}/summary?days=90          buying vs selling
-/docs                                              interactive reference</code></pre>
+  <section class="band paper" aria-label="Sources and update cadence">
+    <div class="wrap strip">
+      <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg><span><strong>Primary sources only.</strong> ASIC short position reports and SEC EDGAR ownership filings, no third-party feeds.</span></div>
+      <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span><strong>Updated every trading day.</strong> The last 14 days are refetched so late files are never missed.</span></div>
+      <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg><span><strong>Licensed for reuse.</strong> ASIC data under CC BY 4.0 with attribution on every response; EDGAR is public domain.</span></div>
+      <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16M6 15l4-5 3 3 5-7"/></svg><span><strong>One formula, sixteen years.</strong> Short % is recomputed from share counts across every ASIC format change.</span></div>
+    </div>
+  </section>
 
-  <pre><code>curl -H "X-API-Key: asxs_…" https://tradingdata-ai.fly.dev/v1/most-shorted?limit=10</code></pre>
+  <section class="band section" id="datasets">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Two datasets, served the same way</h2>
+        <p>The rows below are what the API returned on the dates shown. They are real responses, not illustrations.</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <div class="card-head">
+            <div><h3>ASX short positions</h3><p>Daily, per security, from 16 June 2010</p></div>
+            <span class="pill">most-shorted · 2026-10-13</span>
+          </div>
+          <div class="tbl">
+            <table>
+              <thead><tr><th scope="col">Code</th><th scope="col">Security</th><th scope="col" class="num">Short positions</th><th scope="col" class="num">Short %</th></tr></thead>
+              <tbody>
+                <tr><td class="code">DRO</td><td>DroneShield</td><td class="num">151,825,208</td><td class="num"><b>16.41%</b></td></tr>
+                <tr><td class="code">LOT</td><td>Lotus Resources</td><td class="num">88,684,530</td><td class="num"><b>16.21%</b></td></tr>
+                <tr><td class="code">BOE</td><td>Boss Energy</td><td class="num">61,682,924</td><td class="num"><b>14.86%</b></td></tr>
+                <tr><td class="code">ZIP</td><td>Zip Co</td><td class="num">166,259,939</td><td class="num"><b>13.34%</b></td></tr>
+                <tr><td class="code">IPX</td><td>IperionX</td><td class="num">46,916,848</td><td class="num"><b>12.95%</b></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="chips">
+            <div class="label">Every row carries</div>
+            <div class="chip-row"><span class="chip soft">date</span><span class="chip soft">code</span><span class="chip soft">short_positions</span><span class="chip soft">shares_on_issue</span><span class="chip soft">short_pct</span><span class="chip soft">short_pct_display</span></div>
+          </div>
+          <div class="card-foot">Position date 2026-10-13, securities with at least 100M shares on issue. Short % = short positions ÷ shares on issue.</div>
+        </article>
 
-  <h2>Use it from an AI assistant (MCP)</h2>
-  <pre><code>{
+        <article class="card">
+          <div class="card-head">
+            <div><h3>US insider trades</h3><p>SEC Forms 3, 4 and 5, every filing since 2006</p></div>
+            <span class="pill">insiders/buying · 30 days</span>
+          </div>
+          <div class="tbl">
+            <table>
+              <thead><tr><th scope="col">Ticker</th><th scope="col">Issuer</th><th scope="col" class="num">Insiders</th><th scope="col" class="num">Bought (USD)</th></tr></thead>
+              <tbody>
+                <tr><td class="code">KOD</td><td>Kodiak Sciences</td><td class="num">6</td><td class="num"><b>941,935,816</b></td></tr>
+                <tr><td class="code">ADRX</td><td>ADARx Pharmaceuticals</td><td class="num">9</td><td class="num"><b>152,345,772</b></td></tr>
+                <tr><td class="code">BBD</td><td>Banco Bradesco</td><td class="num">22</td><td class="num"><b>99,343,130</b></td></tr>
+                <tr><td class="code">COUR</td><td>Coursera</td><td class="num">5</td><td class="num"><b>56,768,373</b></td></tr>
+                <tr><td class="code">GME</td><td>GameStop</td><td class="num">3</td><td class="num"><b>54,706,010</b></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="chips">
+            <div class="label">Transaction codes you can filter on</div>
+            <div class="chip-row"><span class="chip on">P open-market buy</span><span class="chip">S sale</span><span class="chip">A grant</span><span class="chip">F tax withholding</span><span class="chip">M option exercise</span></div>
+          </div>
+          <div class="card-foot">Filings from the 30 days to 2026-10-19: issuers with two or more distinct insiders making open-market purchases (code P on shares). Values summed per trade, never per owner.</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="band paper section" id="reliability">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Built to be trusted in a pipeline</h2>
+        <p>Each rule below is documented, tested and applied the same way to every row, from the first file in 2006 to this morning's.</p>
+      </div>
+      <div class="pillars">
+        <div class="pillar"><div class="eyebrow">01 · Recomputed, not copied</div><h3>One short % formula across every ASIC format</h3><p>ASIC's files switched from UTF-16 tabs to UTF-8 commas in 2022 and changed their percentage scaling more than once. Short % is always short positions ÷ shares on issue, so a 2011 row compares with a 2026 row.</p></div>
+        <div class="pillar"><div class="eyebrow">02 · Honest dates</div><h3>Position date on every row, gaps recorded as gaps</h3><p>ASIC publishes each date about four trading days later. A day with no report is stored as "no report", never filled from the day before. Rows that fail basic sanity checks are dropped, not patched.</p></div>
+        <div class="pillar"><div class="eyebrow">03 · Purchases, not paperwork</div><h3>Buying screens count decisions to buy</h3><p>Only open-market purchases (code P on shares) count as buying. Grants, tax withholding and option exercises are kept, but never mistaken for conviction. A trade listed under several owners is counted once.</p></div>
+        <div class="pillar"><div class="eyebrow">04 · Reconciled daily</div><h3>Daily filings match the SEC's quarterly files exactly</h3><p>New EDGAR filings load each day; when the SEC's quarterly data set arrives, its rows replace the daily ones identically. Verified on real filings across Forms 3, 4 and 5 before launch.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band section" id="integrate">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>One key, two ways in</h2>
+        <p>The same key works for REST and for the MCP server. Plan limits apply identically to both.</p>
+      </div>
+      <div class="two-col">
+        <div class="col">
+          <div class="col-head"><h3>REST</h3><span>JSON or CSV · rate-limit headers on every response</span></div>
+<pre><code><span class="dim">$</span> curl -H "X-API-Key: asxs_…" \
+  "https://tradingdata-ai.fly.dev/v1/most-shorted?limit=2&amp;min_shares_on_issue=100000000"
+
+<span class="dim">HTTP/1.1 200 OK
+X-RateLimit-Limit: 250
+X-RateLimit-Remaining: 249</span>
+
+{
+  "date": "2026-10-13",
+  "count": 2,
+  "data": [
+    { "code": "DRO", "name": "DRONESHIELD LIMITED ORDINARY",
+      "short_positions": 151825208, "shares_on_issue": 925339724,
+      "short_pct": 0.164075, "short_pct_display": "16.41%" },
+    { "code": "LOT", "name": "LOTUS RESOURCES LTD ORDINARY",
+      "short_positions": 88684530, "shares_on_issue": 547045342,
+      "short_pct": 0.162115, "short_pct_display": "16.21%" }
+  ],
+  "plan": "free",
+  "attribution": "© Australian Securities &amp; Investments Commission: Reproduced with permission."
+}</code></pre>
+          <p class="fine">Endpoints: <code>/v1/coverage</code>, <code>/v1/products</code>, <code>/v1/short-positions/{code}</code>, <code>/v1/most-shorted</code>, <code>/v1/changes</code>, <code>/v1/us/insiders/buying</code>, <code>/v1/us/insiders/{ticker}</code>, <code>/v1/us/insiders/{ticker}/summary</code>. Full reference at <a href="/docs">/docs</a>.</p>
+        </div>
+        <div class="col">
+          <div class="col-head"><h3>MCP</h3><span>Claude Desktop, Claude Code, Cursor and any MCP client</span></div>
+<pre><code>{
   "mcpServers": {
     "tradingdata-ai": {
       "type": "http",
@@ -113,14 +366,90 @@ GET /v1/us/insiders/{ticker}/summary?days=90          buying vs selling
     }
   }
 }</code></pre>
-  <p>Tools: <code>us_insider_buying</code>, <code>us_insider_trades</code>, <code>us_insider_summary</code>, <code>search_products</code>, <code>short_history</code>, <code>most_shorted</code>, <code>short_changes</code>, <code>data_coverage</code>.</p>
+          <div class="note">
+            <div class="label">Eight tools</div>
+            <div class="chip-row"><span class="chip soft">search_products</span><span class="chip soft">short_history</span><span class="chip soft">most_shorted</span><span class="chip soft">short_changes</span><span class="chip soft">data_coverage</span><span class="chip soft">us_insider_buying</span><span class="chip soft">us_insider_trades</span><span class="chip soft">us_insider_summary</span></div>
+            <p>Ask an assistant "which ASX lithium stock is most shorted, and how has that moved this month?" and it answers from the same rows the REST API returns.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  <footer>
-    <p>US insider data: U.S. Securities and Exchange Commission, EDGAR (Forms 3, 4, 5).</p>
-    <p>ASX data: © Australian Securities &amp; Investments Commission: Reproduced with permission. Short selling position reporting data is licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. This service is independent and is not affiliated with, endorsed or sponsored by ASIC or the SEC.</p>
-    <p>Reported short positions are aggregated disclosures and may differ from actual short interest. Not financial advice. <a href="/terms">Terms and privacy</a> · <a href="mailto:support@trumis.com.au">support@trumis.com.au</a></p>
-  </footer>
+  <section class="band paper section" id="plans">
+    <div class="wrap">
+      <div class="section-head">
+        <h2>Plans</h2>
+        <p>Start free in seconds. Pro is free while the service is in beta.</p>
+      </div>
+      <div class="plans">
+        <div class="plan" id="get-key">
+          <div class="plan-head"><h3>Free</h3><span class="mono">issued instantly</span></div>
+          <dl>
+            <div><dt>History</dt><dd>Last 90 days, both datasets</dd></div>
+            <div><dt>Requests</dt><dd>250 a day</dd></div>
+            <div><dt>MCP server</dt><dd>Included</dd></div>
+            <div><dt>Sign-up</dt><dd>No email, no card</dd></div>
+          </dl>
+          <div class="rule"></div>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="terms"><span>I agree to the <a href="/terms">terms</a>. Keys are shown once and stored only as a hash.</span></label>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary btn-lg" id="getkey" type="button">Get my free key</button>
+            <p class="msg" id="keymsg" role="status"></p>
+          </div>
+          <div class="keybox" id="keybox">
+            <strong>Your key, shown once. Copy it now:</strong>
+            <code class="key" id="keyval"></code>
+            <div class="row"><button class="btn btn-outline" id="copykey" type="button">Copy</button><span class="msg" id="copied"></span></div>
+            <p class="msg">Free plan: 250 requests a day and the last 90 days of data. Try it:</p>
+            <pre><code id="trycurl"></code></pre>
+          </div>
+        </div>
+
+        <div class="plan pro" id="pro">
+          <div class="plan-head"><h3>Pro</h3><span class="pill">free during beta</span></div>
+          <dl>
+            <div><dt>History</dt><dd>Full: ASX from 2010, US from 2006</dd></div>
+            <div><dt>Requests</dt><dd>20,000 a day</dd></div>
+            <div><dt>MCP server</dt><dd>Included</dd></div>
+            <div><dt>Delivery</dt><dd>Key emailed by hand</dd></div>
+          </dl>
+          <div class="rule"></div>
+          <form id="waitlist" action="/v1/pro-waitlist" method="post">
+            <label for="wl-email">Work email</label>
+            <input type="email" id="wl-email" placeholder="you@firm.com" required autocomplete="email">
+            <label for="wl-use">What would you use it for? (optional)</label>
+            <textarea id="wl-use" maxlength="1000" placeholder="Short-interest factor in a quant model, insider-buying alerts for a newsletter…"></textarea>
+            <div class="row"><button class="btn btn-outline btn-lg" type="submit" id="wl-btn">Request Pro access</button><p class="msg" id="wl-msg" role="status"></p></div>
+            <p class="msg">We only use your email to send the key and to contact you about Pro. See <a href="/terms">privacy</a>.</p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
+
+<footer class="wrap">
+  <div class="foot-top">
+    <a class="brand" href="/" style="font-size:15px">
+      <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="3" fill="var(--accent)"/><rect x="5" y="11" width="2.5" height="5" fill="var(--accent-ink)"/><rect x="8.75" y="8" width="2.5" height="8" fill="var(--accent-ink)"/><rect x="12.5" y="4" width="2.5" height="12" fill="var(--accent-ink)"/></svg>
+      <span>tradingdata-ai</span>
+    </a>
+    <nav class="foot-nav" aria-label="Footer">
+      <a href="/docs">API reference</a>
+      <a href="/v1/coverage">Data coverage</a>
+      <a href="/terms">Terms and privacy</a>
+      <a href="mailto:support@trumis.com.au">support@trumis.com.au</a>
+    </nav>
+  </div>
+  <div class="rule"></div>
+  <p>US insider data: U.S. Securities and Exchange Commission, EDGAR (Forms 3, 4, 5).</p>
+  <p>ASX data: © Australian Securities &amp; Investments Commission: Reproduced with permission. Short selling position reporting data is licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. This service is independent and is not affiliated with, endorsed or sponsored by ASIC or the SEC.</p>
+  <p>Reported short positions are aggregated disclosures and may differ from actual short interest. Not financial advice.</p>
+</footer>
+
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
@@ -131,6 +460,19 @@ GET /v1/us/insiders/{ticker}/summary?days=90          buying vs selling
     if (!r.ok) throw new Error(data.message || "Something went wrong. Please try again.");
     return data;
   }
+
+  // Live coverage: filled from the public endpoint; left blank if it cannot be read.
+  fetch("/v1/coverage").then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
+    if (!c || !c.last_date) return;
+    var n = function (v) { return typeof v === "number" ? v.toLocaleString("en-AU") : ""; };
+    $("cov-reports").textContent = n(c.reports);
+    $("cov-products").textContent = n(c.products);
+    $("cov-first").textContent = c.first_date || "";
+    $("cov-last").textContent = c.last_date;
+    $("cov-arrow").hidden = !c.first_date;
+    $("cov-asat").textContent = "Data as at " + c.last_date;
+  }).catch(function () {});
+
   $("getkey").addEventListener("click", async function () {
     var msg = $("keymsg");
     msg.className = "msg"; msg.textContent = "";
@@ -140,7 +482,7 @@ GET /v1/us/insiders/{ticker}/summary?days=90          buying vs selling
       var d = await post("/v1/keys", { accept_terms: true });
       $("keyval").textContent = d.key;
       $("trycurl").textContent = 'curl -H "X-API-Key: ' + d.key + '" ' + location.origin + "/v1/most-shorted?limit=5";
-      $("keybox").style.display = "block";
+      $("keybox").className = "keybox show";
     } catch (e) {
       msg.className = "msg err"; msg.textContent = e.message; this.disabled = false;
     }
