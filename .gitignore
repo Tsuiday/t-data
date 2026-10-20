@@ -8,3 +8,4 @@ data/
 ingest*.log
 serve.log
 insiders_backfill.log
+.claude/
