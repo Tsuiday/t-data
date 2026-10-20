@@ -5,6 +5,8 @@ server:
 
 - **ASX short positions:** every daily ASIC report since June 2010.
 - **US insider trades:** every SEC Form 3, 4 and 5 since January 2006, updated daily.
+- **US planned insider sales:** every SEC Form 144 since electronic filing began
+  (April 2023): sales announced *before* they happen.
 
 **Live:** https://tradingdata-ai.fly.dev (hosted in Sydney).
 
@@ -41,6 +43,8 @@ Claude Code: `claude mcp add --transport http tradingdata-ai https://tradingdata
 | `us_insider_trades` | SEC Form 3/4/5 transactions for one US ticker |
 | `us_insider_buying` | US companies ranked by open-market insider purchases (cluster buying with `min_insiders`) |
 | `us_insider_summary` | Insider buying vs selling (US$) for one ticker |
+| `us_planned_sales` | Form 144 planned sales for one US ticker |
+| `us_planned_sales_recent` | Largest planned insider sales across the US market in the last N days |
 
 Free plan: last 90 days, 250 requests a day. Pro (full history, 20,000
 requests a day) is free during the beta. Request it on the website.
@@ -93,6 +97,32 @@ Data only, not financial advice. See the [terms](https://tradingdata-ai.fly.dev/
 ```sh
 uv run sec-insiders-ingest                    # all quarters + recent daily filings
 uv run sec-insiders-ingest --quarters 2026q2  # one quarter
+```
+
+## US planned insider sales (SEC Form 144)
+
+An officer, director or large holder must file Form 144 *before* selling
+restricted or control shares; Form 4 reports the sale afterwards. Filing has
+been electronic and structured since 13 April 2023.
+
+- **Endpoints:** `GET /v1/us/planned-sales?days=7&min_value=1000000&role=`
+  (largest notices across the market) and
+  `GET /v1/us/insiders/{ticker}/planned-sales` (one company).
+- **Fields:** seller, role, shares and US$ value to be sold, approximate sale
+  date, how the shares were acquired, 10b5-1 plan adoption date, and the
+  seller's sales in the past three months.
+- **Tickers:** a notice names the company by CIK only, so tickers come from
+  the SEC's `company_tickers.json` (refreshed daily), falling back to the Form 4
+  data.
+- **Loading:** there are about 20,000 notices a quarter. The daily job loads
+  the current quarter first, then fills in earlier quarters newest-first within
+  a 45-minute budget per run, fetching 4 at a time (still ≤8 requests/s, about
+  7 notices a second). The history fills in over roughly ten daily runs.
+
+```sh
+uv run sec-form144-ingest                     # current quarter, then history, 45-minute budget
+uv run sec-form144-ingest --budget 600        # 10-minute run
+uv run sec-form144-ingest --quarters 2024q1   # one quarter
 ```
 
 ## Run locally

@@ -226,7 +226,7 @@
           <div class="dataset">
             <div class="dataset-title"><strong>US insider trades</strong><span>source: SEC EDGAR</span></div>
             <div class="stats">
-              <div class="stat"><b>3 · 4 · 5</b><span>SEC forms covered</span></div>
+              <div class="stat"><b>3 · 4 · 5 · 144</b><span>SEC forms covered</span></div>
               <div class="stat"><b>2006</b><span>history starts</span></div>
               <div class="stat"><b>daily</b><span>new filings loaded</span></div>
             </div>
@@ -283,7 +283,7 @@
 
         <article class="card">
           <div class="card-head">
-            <div><h3>US insider trades</h3><p>SEC Forms 3, 4 and 5, every filing since 2006</p></div>
+            <div><h3>US insider trades</h3><p>SEC Forms 3, 4 and 5 since 2006, plus Form 144 planned sales since 2023</p></div>
             <span class="pill">insiders/buying · 30 days</span>
           </div>
           <div class="tbl">
@@ -353,7 +353,7 @@ X-RateLimit-Remaining: 249</span>
   "plan": "free",
   "attribution": "© Australian Securities &amp; Investments Commission: Reproduced with permission."
 }</code></pre>
-          <p class="fine">Endpoints: <code>/v1/coverage</code>, <code>/v1/products</code>, <code>/v1/short-positions/{code}</code>, <code>/v1/most-shorted</code>, <code>/v1/changes</code>, <code>/v1/us/insiders/buying</code>, <code>/v1/us/insiders/{ticker}</code>, <code>/v1/us/insiders/{ticker}/summary</code>. Full reference at <a href="/docs">/docs</a>.</p>
+          <p class="fine">Endpoints: <code>/v1/coverage</code>, <code>/v1/products</code>, <code>/v1/short-positions/{code}</code>, <code>/v1/most-shorted</code>, <code>/v1/changes</code>, <code>/v1/us/insiders/buying</code>, <code>/v1/us/insiders/{ticker}</code>, <code>/v1/us/insiders/{ticker}/summary</code>, <code>/v1/us/planned-sales</code>, <code>/v1/us/insiders/{ticker}/planned-sales</code>. Full reference at <a href="/docs">/docs</a>.</p>
         </div>
         <div class="col">
           <div class="col-head"><h3>MCP</h3><span>Claude Desktop, Claude Code, Cursor and any MCP client</span></div>
@@ -367,8 +367,8 @@ X-RateLimit-Remaining: 249</span>
   }
 }</code></pre>
           <div class="note">
-            <div class="label">Eight tools</div>
-            <div class="chip-row"><span class="chip soft">search_products</span><span class="chip soft">short_history</span><span class="chip soft">most_shorted</span><span class="chip soft">short_changes</span><span class="chip soft">data_coverage</span><span class="chip soft">us_insider_buying</span><span class="chip soft">us_insider_trades</span><span class="chip soft">us_insider_summary</span></div>
+            <div class="label">Ten tools</div>
+            <div class="chip-row"><span class="chip soft">search_products</span><span class="chip soft">short_history</span><span class="chip soft">most_shorted</span><span class="chip soft">short_changes</span><span class="chip soft">data_coverage</span><span class="chip soft">us_insider_buying</span><span class="chip soft">us_insider_trades</span><span class="chip soft">us_insider_summary</span><span class="chip soft">us_planned_sales</span><span class="chip soft">us_planned_sales_recent</span></div>
             <p>Ask an assistant "which ASX lithium stock is most shorted, and how has that moved this month?" and it answers from the same rows the REST API returns.</p>
           </div>
         </div>
@@ -445,7 +445,7 @@ X-RateLimit-Remaining: 249</span>
     </nav>
   </div>
   <div class="rule"></div>
-  <p>US insider data: U.S. Securities and Exchange Commission, EDGAR (Forms 3, 4, 5).</p>
+  <p>US insider data: U.S. Securities and Exchange Commission, EDGAR (Forms 3, 4, 5 and 144).</p>
   <p>ASX data: © Australian Securities &amp; Investments Commission: Reproduced with permission. Short selling position reporting data is licensed by ASIC under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. This service is independent and is not affiliated with, endorsed or sponsored by ASIC or the SEC.</p>
   <p>Reported short positions are aggregated disclosures and may differ from actual short interest. Not financial advice.</p>
 </footer>

@@ -1,0 +1,144 @@
+<SEC-DOCUMENT>0001950047-26-010286.txt : 20261016
+<SEC-HEADER>0001950047-26-010286.hdr.sgml : 20261016
+<ACCEPTANCE-DATETIME>20261016162907
+ACCESSION NUMBER:		0001950047-26-010286
+CONFORMED SUBMISSION TYPE:	144
+PUBLIC DOCUMENT COUNT:		1
+FILED AS OF DATE:		20261016
+DATE AS OF CHANGE:		20261016
+
+SUBJECT COMPANY:	
+
+	COMPANY DATA:	
+		COMPANY CONFORMED NAME:			Apple Inc.
+		CENTRAL INDEX KEY:			0000320193
+		STANDARD INDUSTRIAL CLASSIFICATION:	ELECTRONIC COMPUTERS [3571]
+		ORGANIZATION NAME:           	06 Technology
+		EIN:				942404110
+		STATE OF INCORPORATION:			CA
+		FISCAL YEAR END:			0926
+
+	FILING VALUES:
+		FORM TYPE:		144
+		SEC ACT:		1933 Act
+		SEC FILE NUMBER:	001-36743
+		FILM NUMBER:		261466426
+
+	BUSINESS ADDRESS:	
+		STREET 1:		ONE APPLE PARK WAY
+		CITY:			CUPERTINO
+		STATE:			CA
+		ZIP:			95014
+		BUSINESS PHONE:		(408) 996-1010
+
+	MAIL ADDRESS:	
+		STREET 1:		ONE APPLE PARK WAY
+		CITY:			CUPERTINO
+		STATE:			CA
+		ZIP:			95014
+
+	FORMER COMPANY:	
+		FORMER CONFORMED NAME:	APPLE INC
+		DATE OF NAME CHANGE:	20070109
+
+	FORMER COMPANY:	
+		FORMER CONFORMED NAME:	APPLE COMPUTER INC
+		DATE OF NAME CHANGE:	19970808
+
+REPORTING-OWNER:	
+
+	COMPANY DATA:	
+		COMPANY CONFORMED NAME:			Parekh Kevan
+		CENTRAL INDEX KEY:			0002050912
+		ORGANIZATION NAME:           	
+
+	FILING VALUES:
+		FORM TYPE:		144
+
+	MAIL ADDRESS:	
+		STREET 1:		ONE APPLE PARK WAY
+		CITY:			CUPERTINO
+		STATE:			CA
+		ZIP:			95014
+</SEC-HEADER>
+<DOCUMENT>
+<TYPE>144
+<SEQUENCE>1
+<FILENAME>primary_doc.xml
+<TEXT>
+<XML>
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/ownership" xmlns:ns2="http://www.sec.gov/edgar/common">
+    <headerData>
+        <submissionType>144</submissionType>
+        <filerInfo>
+            <filer>
+                <filerCredentials>
+                    <cik>0002050912</cik>
+                    <ccc>XXXXXXXX</ccc>
+                </filerCredentials>
+            </filer>
+            <liveTestFlag>LIVE</liveTestFlag>
+
+
+
+        </filerInfo>
+    </headerData>
+    <formData>
+        <issuerInfo>
+            <issuerCik>0000320193</issuerCik>
+            <issuerName>Apple Inc.</issuerName>
+            <secFileNumber>001-36743</secFileNumber>
+            <issuerAddress>
+                <ns2:street1>One Apple Park Way</ns2:street1>
+                <ns2:city>Cupertino</ns2:city>
+                <ns2:stateOrCountry>CA</ns2:stateOrCountry>
+                <ns2:zipCode>95014</ns2:zipCode>
+            </issuerAddress>
+            <issuerContactPhone>4089961010</issuerContactPhone>
+            <nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold>KEVAN PAREKH</nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold>
+            <relationshipsToIssuer>
+                <relationshipToIssuer>Officer</relationshipToIssuer>
+            </relationshipsToIssuer>
+        </issuerInfo>
+        <securitiesInformation>
+            <securitiesClassTitle>Common</securitiesClassTitle>
+            <brokerOrMarketmakerDetails>
+                <name>Morgan Stanley Smith Barney LLC Executive Financial Services</name>
+                <address>
+                    <ns2:street1>1 New York Plaza</ns2:street1>
+                    <ns2:street2>8th Floor</ns2:street2>
+                    <ns2:city>New York</ns2:city>
+                    <ns2:stateOrCountry>NY</ns2:stateOrCountry>
+                    <ns2:zipCode>10004</ns2:zipCode>
+                </address>
+            </brokerOrMarketmakerDetails>
+            <noOfUnitsSold>1392</noOfUnitsSold>
+            <aggregateMarketValue>476064.00</aggregateMarketValue>
+            <noOfUnitsOutstanding>14594180000</noOfUnitsOutstanding>
+            <approxSaleDate>10/16/2026</approxSaleDate>
+            <securitiesExchangeName>NASDAQ</securitiesExchangeName>
+        </securitiesInformation>
+        <securitiesToBeSold>
+            <securitiesClassTitle>Common</securitiesClassTitle>
+            <acquiredDate>10/15/2026</acquiredDate>
+            <natureOfAcquisitionTransaction>Restricted Stock Units</natureOfAcquisitionTransaction>
+            <nameOfPersonfromWhomAcquired>Issuer</nameOfPersonfromWhomAcquired>
+            <isGiftTransaction>N</isGiftTransaction>
+            <amountOfSecuritiesAcquired>1392</amountOfSecuritiesAcquired>
+            <paymentDate>10/15/2026</paymentDate>
+            <natureOfPayment>N/A</natureOfPayment>
+        </securitiesToBeSold>
+        <nothingToReportFlagOnSecuritiesSoldInPast3Months>Y</nothingToReportFlagOnSecuritiesSoldInPast3Months>
+        <noticeSignature>
+            <noticeDate>10/16/2026</noticeDate>
+            <planAdoptionDates>
+                <planAdoptionDate>11/21/2025</planAdoptionDate>
+            </planAdoptionDates>
+            <signature>/s/ Kevan Parekh</signature>
+        </noticeSignature>
+    </formData>
+</edgarSubmission>
+</XML>
+</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>

@@ -6,6 +6,7 @@ import sqlite3
 from pathlib import Path
 
 from .sec_insiders import SCHEMA as INSIDER_SCHEMA
+from .sec_form144 import SCHEMA as FORM144_SCHEMA
 
 DEFAULT_PATH = Path(os.environ.get("ASX_SHORTS_DB", "data/asx_shorts.sqlite"))
 
@@ -81,5 +82,6 @@ def connect(path: Path | str | None = None, *, readonly: bool = False) -> sqlite
         conn.execute("PRAGMA busy_timeout=30000")   # parallel ingest workers wait instead of failing
         conn.executescript(SCHEMA)
         conn.executescript(INSIDER_SCHEMA)
+        conn.executescript(FORM144_SCHEMA)
     conn.row_factory = sqlite3.Row
     return conn

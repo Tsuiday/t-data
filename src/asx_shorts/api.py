@@ -25,7 +25,7 @@ from pydantic import BaseModel, Field
 
 from mcp.server.transport_security import TransportSecuritySettings
 
-from . import asic, insider_queries, queries, sec_insiders, signup
+from . import asic, insider_queries, queries, sec_form144, sec_insiders, signup
 from .db import connect
 from .keys import PLANS, Plan, count_request, lookup
 from .mcp_server import current_plan, mcp
@@ -81,6 +81,8 @@ def _date(value: str | None, name: str) -> str | None:
 def _wrap(request: Request, plan: Plan, payload: dict[str, Any], source: str = "asic") -> JSONResponse:
     if source == "sec":
         body = {**payload, "plan": plan.name, "attribution": sec_insiders.ATTRIBUTION}
+    elif source == "sec144":
+        body = {**payload, "plan": plan.name, "attribution": sec_form144.ATTRIBUTION}
     else:
         body = {**payload, "plan": plan.name, "attribution": asic.ATTRIBUTION, "licence": asic.LICENCE}
     resp = JSONResponse(body)
@@ -297,6 +299,29 @@ def us_insider_summary(request: Request, plan: Annotated[Plan, Depends(require_k
     if not TICKER_US.match(ticker):
         raise HTTPException(400, {"error": "bad_ticker", "message": "tickers are 1-10 letters, digits, '.' or '-'"})
     return _wrap(request, plan, _run(insider_queries.summary, ticker, days, plan.floor()), "sec")
+
+
+@router.get("/v1/us/planned-sales")
+def us_planned_sales_recent(request: Request, plan: Annotated[Plan, Depends(require_key)],
+                            days: Annotated[int, Query(ge=1, le=3650)] = 7,
+                            min_value: Annotated[float, Query(ge=0)] = 1_000_000,
+                            role: Annotated[str, Query(pattern="^(any|officer_or_director|officer|director|ten_percent_owner)$")] = "any",
+                            limit: Annotated[int, Query(ge=1, le=200)] = 50):
+    """Largest planned insider sales (SEC Form 144) filed in the last N days. Filed before the sale."""
+    return _wrap(request, plan, _run(insider_queries.planned_sales_recent, days, min_value, role, limit, plan.floor()), "sec144")
+
+
+@router.get("/v1/us/insiders/{ticker}/planned-sales")
+def us_planned_sales(request: Request, plan: Annotated[Plan, Depends(require_key)], ticker: str,
+                     start: Annotated[str | None, Query(alias="from")] = None,
+                     end: Annotated[str | None, Query(alias="to")] = None,
+                     limit: Annotated[int, Query(ge=1, le=500)] = 100):
+    """Planned insider sales (SEC Form 144 notices) for one US ticker, newest first."""
+    ticker = ticker.upper()
+    if not TICKER_US.match(ticker):
+        raise HTTPException(400, {"error": "bad_ticker", "message": "tickers are 1-10 letters, digits, '.' or '-'"})
+    return _wrap(request, plan, _run(insider_queries.planned_sales, ticker, _date(start, "from"), _date(end, "to"),
+                                     limit, plan.floor()), "sec144")
 
 
 @router.get("/v1/us/insiders/{ticker}")

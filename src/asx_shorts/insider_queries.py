@@ -151,3 +151,77 @@ def summary(conn: sqlite3.Connection, ticker: str, days: int, floor: str | None)
         "note": "Open-market purchases (P) and sales (S) of shares only; grants, tax withholding and "
                 "option exercises are excluded. Sales under a 10b5-1 plan were scheduled in advance.",
     }
+
+
+# ---- Form 144: planned sales ---------------------------------------------------
+
+PLANNED_ROLE_FILTERS = {
+    "any": "1=1",
+    "officer_or_director": "(n.relationship LIKE '%Officer%' OR n.relationship LIKE '%Director%')",
+    "officer": "n.relationship LIKE '%Officer%'",
+    "director": "n.relationship LIKE '%Director%'",
+    "ten_percent_owner": "(n.relationship LIKE '%10%' OR n.relationship LIKE '%Ten Percent%')",
+}
+
+# Display ticker: the SEC's current CIK -> ticker list, else the latest Form 4 ticker.
+_TICKER = """coalesce((SELECT ticker FROM cik_tickers WHERE cik = n.issuer_cik),
+                      (SELECT ticker FROM insider_filings WHERE issuer_cik = n.issuer_cik AND ticker IS NOT NULL
+                       ORDER BY filing_date DESC LIMIT 1))"""
+
+
+def form144_ciks(conn: sqlite3.Connection, ticker: str) -> list[int]:
+    t = ticker.strip().upper()
+    ciks = {r[0] for r in conn.execute("SELECT cik FROM cik_tickers WHERE ticker = ?", (t,))}
+    ciks |= {r[0] for r in conn.execute("SELECT DISTINCT issuer_cik FROM insider_filings WHERE ticker = ?", (t,))}
+    if not ciks:
+        raise NotFound(f"unknown US ticker {t}")
+    return sorted(ciks)
+
+
+def _planned_row(r: sqlite3.Row) -> dict[str, Any]:
+    d = dict(r)
+    d["under_10b5_1_plan"] = d["plan_adopted"] is not None
+    units, out = d.get("units"), d.pop("units_outstanding", None)
+    d["pct_of_outstanding"] = round(units / out, 6) if units and out else None
+    return d
+
+
+_PLANNED_COLS = f"""n.accession, n.filing_date, n.form_type, n.issuer_cik, n.issuer_name, {_TICKER} AS ticker,
+                    n.seller, n.relationship, n.security_class, n.units, n.market_value, n.units_outstanding,
+                    n.approx_sale_date, n.exchange, n.broker, n.acquired_how, n.plan_adopted, n.sold_past_3m_usd"""
+
+
+def planned_sales(conn: sqlite3.Connection, ticker: str, start: str | None, end: str | None,
+                  limit: int, floor: str | None) -> dict[str, Any]:
+    """Form 144 notices for one US ticker, newest first."""
+    ciks = form144_ciks(conn, ticker)
+    where = [f"n.issuer_cik IN ({','.join('?' * len(ciks))})"]
+    args: list[Any] = list(ciks)
+    lo = max(filter(None, [start, floor]), default=None)
+    if lo:
+        where.append("n.filing_date >= ?")
+        args.append(lo)
+    if end:
+        where.append("n.filing_date <= ?")
+        args.append(end)
+    rows = conn.execute(
+        f"SELECT {_PLANNED_COLS} FROM form144_notices n WHERE {' AND '.join(where)} "
+        "ORDER BY n.filing_date DESC, n.market_value DESC LIMIT ?", [*args, limit]).fetchall()
+    data = [_planned_row(r) for r in rows]
+    return {"ticker": ticker.upper(), "issuer_ciks": ciks, "from": lo, "to": end, "count": len(data), "data": data,
+            "note": "Form 144 is filed before an insider sells; the sale itself is reported later on Form 4. "
+                    "A notice is an intention, not a completed sale."}
+
+
+def planned_sales_recent(conn: sqlite3.Connection, days: int, min_value: float, role: str,
+                         limit: int, floor: str | None) -> dict[str, Any]:
+    """Largest planned insider sales (Form 144) filed in the last `days`, across the market."""
+    since = _since(days, floor)
+    role_sql = PLANNED_ROLE_FILTERS.get(role, PLANNED_ROLE_FILTERS["any"])
+    rows = conn.execute(
+        f"""SELECT {_PLANNED_COLS} FROM form144_notices n
+            WHERE n.filing_date >= ? AND coalesce(n.market_value, 0) >= ? AND {role_sql}
+            ORDER BY n.market_value DESC LIMIT ?""", (since, min_value, limit)).fetchall()
+    data = [_planned_row(r) for r in rows]
+    return {"since": since, "role": role, "min_value_usd": min_value, "count": len(data), "data": data,
+            "note": "Form 144 notices are intentions to sell, filed before the sale."}

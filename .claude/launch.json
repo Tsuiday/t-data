@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "ASX_SHORTS_INGEST=off",
+        "ASX_SHORTS_DB=/private/tmp/claude-501/-Volumes-External-Claude--claude-spares-spare-CZkFGY/758e5afb-1ad3-4578-8adb-d5e85a548007/scratchpad/dev.sqlite",
+        "uv", "run", "asx-shorts-serve", "--port", "8000"
+      ],
+      "port": 8000
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+<SEC-DOCUMENT>0001976408-26-000893.txt : 20261016
+<SEC-HEADER>0001976408-26-000893.hdr.sgml : 20261016
+<ACCEPTANCE-DATETIME>20261016060215
+ACCESSION NUMBER:		0001976408-26-000893
+CONFORMED SUBMISSION TYPE:	144
+PUBLIC DOCUMENT COUNT:		1
+FILED AS OF DATE:		20261016
+DATE AS OF CHANGE:		20261016
+
+SUBJECT COMPANY:	
+
+	COMPANY DATA:	
+		COMPANY CONFORMED NAME:			Freightos Ltd
+		CENTRAL INDEX KEY:			0001927719
+		STANDARD INDUSTRIAL CLASSIFICATION:	ARRANGEMENT OF TRANSPORTATION OF FREIGHT & CARGO [4731]
+		ORGANIZATION NAME:           	01 Energy & Transportation
+		EIN:				000000000
+		STATE OF INCORPORATION:			E9
+		FISCAL YEAR END:			1231
+
+	FILING VALUES:
+		FORM TYPE:		144
+		SEC ACT:		1933 Act
+		SEC FILE NUMBER:	001-41604
+		FILM NUMBER:		261464264
+
+	BUSINESS ADDRESS:	
+		STREET 1:		PLANTA 10, AVDA. DIAGONAL
+		CITY:			BARCELONA
+		STATE:			U3
+		ZIP:			08018
+		BUSINESS PHONE:		000-000-0000
+
+	MAIL ADDRESS:	
+		STREET 1:		PLANTA 10, AVDA. DIAGONAL
+		CITY:			BARCELONA
+		STATE:			U3
+		ZIP:			08018
+
+REPORTING-OWNER:	
+
+	COMPANY DATA:	
+		COMPANY CONFORMED NAME:			Arroyo Ian
+		CENTRAL INDEX KEY:			0001976393
+		ORGANIZATION NAME:           	
+
+	FILING VALUES:
+		FORM TYPE:		144
+
+	MAIL ADDRESS:	
+		STREET 1:		TECHNOLOGY PARK BUILDING 2
+		STREET 2:		1 DERECH AGUDAT SPORT HAPO'EL
+		CITY:			JERUSALEM
+		STATE:			L3
+		ZIP:			9695102
+</SEC-HEADER>
+<DOCUMENT>
+<TYPE>144
+<SEQUENCE>1
+<FILENAME>primary_doc.xml
+<TEXT>
+<XML>
+<?xml version="1.0" encoding="UTF-8"?><edgarSubmission xmlns="http://www.sec.gov/edgar/ownership" xmlns:com="http://www.sec.gov/edgar/common">
+  <headerData>
+    <submissionType>144</submissionType>
+    <filerInfo>
+      <filer>
+        <filerCredentials>
+          <cik>0001976393</cik>
+          <ccc>XXXXXXXX</ccc>
+        </filerCredentials>
+      </filer>
+      <liveTestFlag>LIVE</liveTestFlag>
+
+
+    </filerInfo>
+  </headerData>
+  <formData>
+    <issuerInfo>
+      <issuerCik>0001927719</issuerCik>
+      <issuerName>Freightos Ltd</issuerName>
+      <secFileNumber>001-41604</secFileNumber>
+      <issuerAddress>
+        <com:street1>Torre Glories Planta 10</com:street1>
+        <com:street2>Avda. Diagonal, 211</com:street2>
+        <com:city>Barcelona</com:city>
+        <com:stateOrCountry>U3</com:stateOrCountry>
+        <com:zipCode>8018</com:zipCode>
+      </issuerAddress>
+      <issuerContactPhone>000-000-0000</issuerContactPhone>
+      <nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold>Ian Arroyo</nameOfPersonForWhoseAccountTheSecuritiesAreToBeSold>
+      <relationshipsToIssuer>
+        <relationshipToIssuer>Officer</relationshipToIssuer>
+      </relationshipsToIssuer>
+    </issuerInfo>
+    <securitiesInformation>
+      <securitiesClassTitle>Ordinary Shares</securitiesClassTitle>
+      <brokerOrMarketmakerDetails>
+        <name>Oppenheimer &amp; Co. Inc.</name>
+        <address>
+          <com:street1>85 Broad St.</com:street1>
+          <com:city>New York</com:city>
+          <com:stateOrCountry>NY</com:stateOrCountry>
+          <com:zipCode>10004</com:zipCode>
+        </address>
+      </brokerOrMarketmakerDetails>
+      <noOfUnitsSold>8213</noOfUnitsSold>
+      <aggregateMarketValue>6414.35</aggregateMarketValue>
+      <noOfUnitsOutstanding>51376890</noOfUnitsOutstanding>
+      <approxSaleDate>10/15/2026</approxSaleDate>
+      <securitiesExchangeName>Nasdaq</securitiesExchangeName>
+    </securitiesInformation>
+    <securitiesToBeSold>
+      <securitiesClassTitle>Ordinary Shares</securitiesClassTitle>
+      <acquiredDate>10/15/2026</acquiredDate>
+      <natureOfAcquisitionTransaction>Shares issued upon vesting of RSUs</natureOfAcquisitionTransaction>
+      <nameOfPersonfromWhomAcquired>Freightos Ltd</nameOfPersonfromWhomAcquired>
+      <isGiftTransaction>N</isGiftTransaction>
+      <amountOfSecuritiesAcquired>54600</amountOfSecuritiesAcquired>
+      <paymentDate>10/15/2026</paymentDate>
+      <natureOfPayment>No consideration, shares issued upon vesting of RSUs</natureOfPayment>
+    </securitiesToBeSold>
+    <nothingToReportFlagOnSecuritiesSoldInPast3Months>N</nothingToReportFlagOnSecuritiesSoldInPast3Months>
+    <securitiesSoldInPast3Months>
+      <sellerDetails>
+        <name>Ian Arroyo</name>
+        <address>
+          <com:street1>Torre Glories Planta 10</com:street1>
+          <com:street2>Avda. Diagonal, 211</com:street2>
+          <com:city>Barcelona</com:city>
+          <com:stateOrCountry>U3</com:stateOrCountry>
+          <com:zipCode>8018</com:zipCode>
+        </address>
+      </sellerDetails>
+      <securitiesClassTitle>Ordinary Shares</securitiesClassTitle>
+      <saleDate>07/16/2026</saleDate>
+      <amountOfSecuritiesSold>1760</amountOfSecuritiesSold>
+      <grossProceeds>2238.99</grossProceeds>
+    </securitiesSoldInPast3Months>
+    <securitiesSoldInPast3Months>
+      <sellerDetails>
+        <name>Ian Arroyo</name>
+        <address>
+          <com:street1>Torre Glories Planta 10</com:street1>
+          <com:street2>Avda. Diagonal, 211</com:street2>
+          <com:city>Barcelona</com:city>
+          <com:stateOrCountry>U3</com:stateOrCountry>
+          <com:zipCode>8018</com:zipCode>
+        </address>
+      </sellerDetails>
+      <securitiesClassTitle>Ordinary Shares</securitiesClassTitle>
+      <saleDate>10/01/2026</saleDate>
+      <amountOfSecuritiesSold>8282</amountOfSecuritiesSold>
+      <grossProceeds>7414.05</grossProceeds>
+    </securitiesSoldInPast3Months>
+    <remarks>Shares sold to cover tax withholding obligations upon vesting of equity awards.</remarks>
+    <noticeSignature>
+      <noticeDate>10/15/2026</noticeDate>
+      <signature>Ian Arroyo By: /s/ Meirav Shemesh Title: Authorized Signatory, Oppenheimer Israel (pursuant to delegation)</signature>
+    </noticeSignature>
+  </formData>
+</edgarSubmission>
+</XML>
+</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>

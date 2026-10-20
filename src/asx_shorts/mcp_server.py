@@ -11,7 +11,7 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
-from . import asic, insider_queries, queries, sec_insiders, signup
+from . import asic, insider_queries, queries, sec_form144, sec_insiders, signup
 from .db import connect
 from .keys import PLANS, Plan
 
@@ -22,9 +22,11 @@ mcp = MCPServer(
     name="tradingdata-ai",
     title="Trading data for AI (ASX short positions, US insider trades)",
     instructions=(
-        "Two datasets. (1) US insider transactions from SEC Forms 3/4/5 since 2006 "
+        "Two markets. (1) US insiders: transactions from SEC Forms 3/4/5 since 2006 "
         "(tools prefixed us_insider_): code P = open-market purchase, S = sale; grants (A), "
         "tax withholding (F) and option exercises (M) are not buying or selling decisions. "
+        "Planned sales from SEC Form 144 since April 2023 (tools us_planned_sales*) are filed "
+        "before an insider sells, so they can show a sale before it happens. "
         "(2) Daily short positions for ASX-listed securities from ASIC, since June 2010. "
         "short_pct is a fraction of shares on issue (0.05 = 5%). Positions are as at the "
         "position date; ASIC publishes them about four trading days later, so the latest "
@@ -93,17 +95,17 @@ def data_coverage() -> dict[str, Any]:
     return _call("data_coverage", queries.coverage)
 
 
-def _wrap_sec(payload: dict[str, Any]) -> dict[str, Any]:
-    return {**payload, "attribution": sec_insiders.ATTRIBUTION, "plan": current_plan.get().name}
+def _wrap_sec(payload: dict[str, Any], attribution: str = sec_insiders.ATTRIBUTION) -> dict[str, Any]:
+    return {**payload, "attribution": attribution, "plan": current_plan.get().name}
 
 
-def _call_sec(tool: str, fn, *args) -> dict[str, Any]:
+def _call_sec(tool: str, fn, *args, attribution: str = sec_insiders.ATTRIBUTION) -> dict[str, Any]:
     _track(tool)
     with closing(connect(readonly=True)) as conn:
         try:
-            return _wrap_sec(fn(conn, *args))
+            return _wrap_sec(fn(conn, *args), attribution)
         except queries.NotFound as exc:
-            return _wrap_sec({"error": "not_found", "message": str(exc)})
+            return _wrap_sec({"error": "not_found", "message": str(exc)}, attribution)
 
 
 @mcp.tool()
@@ -130,6 +132,26 @@ def us_insider_buying(days: int = 30, min_value: float = 100_000, role: str = "o
 def us_insider_summary(ticker: str, days: int = 90) -> dict[str, Any]:
     """Open-market insider buying vs selling (US$) for one US ticker over the last N days."""
     return _call_sec("us_insider_summary", insider_queries.summary, ticker, max(1, min(days, 3650)), current_plan.get().floor())
+
+
+@mcp.tool()
+def us_planned_sales(ticker: str, start: str | None = None, end: str | None = None, limit: int = 50) -> dict[str, Any]:
+    """Planned insider sales for one US ticker: SEC Form 144 notices, filed BEFORE an insider sells
+    (the completed sale appears later in us_insider_trades as code S). Dates filter the filing date."""
+    return _call_sec("us_planned_sales", insider_queries.planned_sales, ticker, start, end, max(1, min(limit, 500)),
+                     current_plan.get().floor(), attribution=sec_form144.ATTRIBUTION)
+
+
+@mcp.tool()
+def us_planned_sales_recent(days: int = 7, min_value: float = 1_000_000, role: str = "any", limit: int = 25) -> dict[str, Any]:
+    """Largest planned insider sales (SEC Form 144) filed across the US market in the last N days.
+    role: any | officer_or_director | officer | director | ten_percent_owner.
+    A notice is an intention to sell, not a completed sale."""
+    if role not in insider_queries.PLANNED_ROLE_FILTERS:
+        role = "any"
+    return _call_sec("us_planned_sales_recent", insider_queries.planned_sales_recent, max(1, min(days, 3650)),
+                     max(0.0, min_value), role, max(1, min(limit, 100)), current_plan.get().floor(),
+                     attribution=sec_form144.ATTRIBUTION)
 
 
 def main_stdio() -> None:

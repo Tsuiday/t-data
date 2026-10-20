@@ -12,6 +12,7 @@ dependencies = [
 [project.scripts]
 asx-shorts-ingest = "asx_shorts.ingest:main"
 sec-insiders-ingest = "asx_shorts.sec_insiders:main"
+sec-form144-ingest = "asx_shorts.sec_form144:main"
 asx-shorts-keys = "asx_shorts.keys:main"
 asx-shorts-mcp = "asx_shorts.mcp_server:main_stdio"
 asx-shorts-serve = "asx_shorts.api:main"

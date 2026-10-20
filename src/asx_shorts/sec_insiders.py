@@ -342,13 +342,14 @@ def parse_ownership_xml(xml: bytes, accession: str, filing_date: str) -> Filing 
     return f
 
 
-def daily_index_entries(idx: bytes) -> list[tuple[str, str, str]]:
-    """[(form, accession, archive_path)] for Forms 3/4/5 in an EDGAR form.YYYYMMDD.idx.
+def daily_index_entries(idx: bytes, forms: set[str] = FORMS) -> list[tuple[str, str, str]]:
+    """[(form, accession, archive_path)] for `forms` (default 3/4/5) in an EDGAR form index
+    (daily form.YYYYMMDD.idx or quarterly full-index form.idx: same layout).
     Each filing is listed once per party (issuer and owner), so accessions are deduplicated."""
     seen, out = set(), []
     for line in idx.decode("latin-1").splitlines():
         m = re.match(r"^(\S+(?:/A)?)\s+.*?\s+(\d+)\s+(\d{4}-?\d{2}-?\d{2})\s+(edgar/data/\S+\.txt)\s*$", line)
-        if not m or m.group(1) not in FORMS:
+        if not m or m.group(1) not in forms:
             continue
         acc = m.group(4).rsplit("/", 1)[-1].removesuffix(".txt")
         if acc not in seen:

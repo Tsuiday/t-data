@@ -1,4 +1,4 @@
-"""In-process daily ASIC update.
+"""In-process daily updates: ASIC short positions, SEC Forms 3/4/5, SEC Form 144.
 
 On Fly a volume attaches to exactly one machine, so a separate scheduled
 machine can't reach the database. Instead the API process runs the catch-up
@@ -14,7 +14,7 @@ import threading
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from . import ingest, sec_insiders
+from . import ingest, sec_form144, sec_insiders
 from .db import connect
 
 log = logging.getLogger("asx_shorts.scheduler")
@@ -78,6 +78,14 @@ class DailyIngest:
                     conn.close()
             except Exception:
                 log.exception("SEC insider catch-up failed")
+            try:
+                conn = connect()
+                try:
+                    log.info("Form 144 catch-up finished: %s", sec_form144.catch_up(conn, log=log.info))
+                finally:
+                    conn.close()
+            except Exception:
+                log.exception("Form 144 catch-up failed")
             wake = next_run(datetime.now(SYDNEY), self.hour)
             log.info("next ingest at %s", wake.isoformat())
             if self._stop.wait((wake - datetime.now(SYDNEY)).total_seconds()):
